@@ -41,84 +41,84 @@ table_of_contents:
 
 ## Raw text
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [0.5s] We are live.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [3.4s] Are we live?
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [4.6s] We are live, yes.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [6.0s] So Streamyard says.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [9.6s] My window doesn't say live.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [13.5s] You guys have an intro you'd like to do?
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [16.9s] Yeah, well, for us...
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [18.3s] Here we go, here we go.
 [19.3s] Yeah, there we are.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [22.8s] Go ahead, Bob.
 [24.7s] So, hello, everybody.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [26.0s] I guess we're ready to go.
 [30.9s] So, today, we have a special guest with us.
 [34.7s] It's the first time that you and I have met, Brian,
 [38.3s] but you are very familiar to all of my colleagues here
 [42.3s] as an ex-BlockAppser.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [47.2s] Yeah, I'm an ex-CryptoEx.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [49.6s] You're never an ex-BlockAppser.
 [51.8s] You're always, like, part of Team BlockApps.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [54.2s] The alumni network.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [55.4s] Yes, exactly.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [56.6s] Yeah, yeah.
 [58.2s] You guys gave me my...
 [58.9s] You gave me my first opportunity to work in Ethereum back in 2017,
 [62.9s] which it feels like ages ago.
 [64.7s] I mean, it is ages ago.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [65.6s] Lifetime, yeah.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [67.5s] Yeah, so thank you guys for that.
 [69.2s] Happy to be on here.
 [70.2s] It's always great seeing you guys around.
 [71.9s] And so, talking about one of my favorite topics.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [75.7s] Welcome.
 [76.3s] So, yeah, so welcome back.
 [78.1s] Would you like to introduce yourself
 [80.6s] and talk a little bit about what Pistachio is?
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [84.3s] Yeah, sure.
 
 Bob
 [85.4s] Start there.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [87.4s] So, Brian Smocovich.
 [88.9s] bsmokes.eth on Twitter.
 [92.2s] We're building PistachioFi.
@@ -151,11 +151,11 @@ Brian:
 [170.3s] and doing things in a way
 [172.6s] to just bring more people on-chain.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [176.4s] I see that the number you said
 [179.6s] was 18 versions in five months.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [183.6s] Oh, we've pushed out several since that tweet.
 [187.5s] Probably at least three or four.
 [189.5s] So that, yeah, we ship a lot.
@@ -201,7 +201,7 @@ Brian:
 [267.9s] able to like watch and categorize that and implement that is like a big portion of what I
 [273.0s] think makes our app more successful.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [275.0s] Let me ask maybe a slightly controversial question. So
 [279.1s] if you think about like FinTech 1.0 companies, I would say they greatly improve the UX on the
 [287.7s] legacy financial system. Like it looks way better. It works. It's not nearly as much of a mess as the
@@ -213,7 +213,7 @@ Kieren:
 [324.6s] you're multi-chain, but like inheriting all of the problems from the layers below too, you know?
 [329.4s] So like, what, how do you think about that?
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [332.0s] There's a, there's a lot to fix. I think
 [335.9s] you're right in that Robinhood is sort of that shining example of, of FinTech generational UX,
 [343.8s] UI of making things easy, fast, gamified in a way. I really love Venmo as an example. I
@@ -249,14 +249,14 @@ Brian:
 [503.3s] have these 7702 implemented. Right. And so there's a lot of these like big players that
 [506.4s] still don't have these, these available UX implementations live and integrated into their apps.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [515.1s] I'm curious, Brian, because like, you know, just to reveal some of the background, right,
 [520.7s] when you were working for us, you were like a sales guy. How did you teach yourself about UX
 [525.9s] and product design? I'm glad you know, you've joined the dark side. But it's like, like, what,
 [531.8s] what, what got you into UX?
 [533.3s] there and you know what what made you feel like okay this is something
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [539.0s] I can take. Well, I've always
 [540.7s] honestly really loved the product side. Like I think I had like a natural ability to be a sales
 [548.2s] person. Like I love to just chat and create rapport and I think that's very important for
@@ -268,7 +268,7 @@ Brian:
 [583.6s] or whatever it is, right, just because I'm like, I'm obsessed with being able to do this and improve
 [591.6s] it and making it a job. Like I don't know, it's like just a different thing. But also
 [591.7s] like having UX/UI—it was like some courses that I would take and do that. And then a lot of it
-[597.7s] was just trial and error. And I think a big part of it was having my own thing. And I'm sure Kieren
+[597.7s] was just trial and error. And I think a big part of it was having my own thing. And I'm sure [Kieren]({{ '/people/kieren-james-lubin/' | relative_url }})
 [604.5s] can—or I mean I think all of you, but both you guys can relate to this—is that once it's yours,
 [613.4s] you know there's a different sort of obsession that comes with it rather than just like working for
 [619.4s] someone. Like, you know, like if you're doing something that kind of—you're kind of going to work
@@ -282,7 +282,7 @@ Brian:
 [666.0s] it over, right? And so I think all of that has just like aggregated to and led me to where I am
 [673.6s] today.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [674.0s] And yeah, I mean, we—one of the benefits of being in the space so long is we've gotten the
 [679.0s] chance to work with some great people and we could always see that you had that sort of
 [683.2s] entrepreneurial spirit. It's interesting that it's come out of this. I'm—I, you know, I think one though
@@ -290,7 +290,7 @@ Victor:
 [694.6s] ability to listen when people say, hey, this is wrong or I don't understand this. Like that seems
 [701.3s] to be a big hurdle that, you know, a lot of truly technical people just can't get over.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [708.0s] And it comes down to—which I think maybe is—makes it hard sometimes for technical people to get into this as
 [715.4s] well—is that I say like UX is just empathy just like brought to life. Because at the end of the
 [722.8s] day, it's like you very, very much need to just be able to put yourself in your users' shoes
@@ -300,14 +300,14 @@ Brian:
 [743.9s] if you don't have that ability to like also be frustrated, then you're not going to care enough
 [749.4s] to fix it, right? It's like you should be pissed if a user is going to be pissed. You should be pissed.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [755.5s] Yeah, 100%. Who do you see your target user as? And I guess, I mean,
 [764.0s] you know, there's like there's full-on normies, there's crypto native,
 [768.6s] there's—but the, you know, absolutely like interesting like age ranges and all that sort
 [773.9s] of thing. Because I think maybe both of us, but you know, it's like it's hard to define exactly
 [778.8s] like the bucket. Like they probably are crypto friendly, but maybe, you know, anyway.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [785.0s] We will be. Normally we are normie friendly. Like if you want to invite your—your—your—I want to say your
 [791.9s] parents, but your dad's a bit, I think, beyond the rest of us when it comes to being crypto native.
 [798.6s] When it comes to like let's say like siblings and family, I want it to be like friendly enough
@@ -330,10 +330,10 @@ Brian:
 [906.4s] users, to trust that as well. But also if you want to like invite your friends, your friends,
 [911.4s] family, to make it easy just to get on-chain, this is the easiest way, right?
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [918.0s] So why do you think the UX has been so bad in Web3 for so long?
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [927.0s] I think it's a large disconnect of people building
 [930.8s] and people talking to users. Especially a lot of—like I talk to a lot of founders. I love to talk
 [936.7s] to founders. I like—I meet so many people. Like one of the coolest parts about being a founder is just
@@ -378,7 +378,7 @@ Brian:
 [1145.4s] they're getting pulled in all these different directions instead of going really back to the
 [1149.0s] core of what problem do I want to solve?
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1152.6s] I mean, my kind of theory and one of the challenges Web3 has had is that, you know, in the
 [1157.6s] first phase of Web3, really we're just trying to solve technical problems, right, like make
 [1163.4s] it work at all. And the people who did those things kind of succeeded to a sin. And then, but
@@ -388,7 +388,7 @@ Victor:
 [1182.6s] okay, how do we solve that technical problem? And that's really where I think the shift has kind of
 [1187.3s] happened. And, you know, I think you've caught it at the right time.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1192.2s] I think there's a lot more engineers these days too that are more savvy in that way,
 [1194.0s] like towards design, like more like
 [1197.4s] hybrid engineers who have that back, like back end, front—I mean just full stack, right, who then
@@ -396,21 +396,21 @@ Brian:
 [1208.1s] from scratch and they had—they were forced to, right, as opposed to just like a straight
 [1212.6s] back end engineer who's doing these things. One thing—
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [1215.0s] I'll say I now code again occasionally
 [1218.8s] because the AI has gotten so good. And if it has a template, like it's not so good at UX from scratch,
 [1224.7s] but if it has something to work from, I'm like, no, just like generate a component like this and
 [1229.5s] do this. And it usually gets it right within a couple times. So the iteration cycle is so much
 [1235.6s] less painful than it used to be. Absolutely.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1239.0s] I found with my Web 2 startups and my mobile startup
 [1242.6s] that, like, one of the reasons, you know, I was like CTO of the first startups and then I switched
 [1247.8s] to product because I realized that, like, hey, by turning step three into step one, I could like
 [1253.9s] 10x the usage overnight, right? So it's like that, but it's a totally different mode of thinking than,
 [1260.8s] oh, how am I going to get the code out the door and get all of those things?
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1260.0s] Also, the infrastructure
 [1266.3s] really didn't exist for a while. Like I remember vividly, like one time we were at the BlockApps
 [1272.3s] office and, Vic, you said in the office, like, like, mobile Web3 sucks. Just—just I—I just—I remember I
@@ -428,19 +428,19 @@ Brian:
 [1338.9s] hardened stuff that we can just take and use and that we don't have to like bash our heads against
 [1344.9s] the wall trying to integrate it because it doesn't work.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1348.0s] I—yeah, I kind of remember that conversation.
 [1350.6s] I think one of my frustrations at the time was like talking to some of the Ethereum devs and
 [1355.8s] they were like, yeah, we have a mobile solution. We're gonna run a node on your phone. It was like,
 [1361.8s] do you know, like, battery life is important to me? I know this is the last of the day.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [1368.0s] This is where I started, remember?
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1372.0s] Yes, you tried to run it on a watch, man.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [1375.0s] Smartwatch. That was my first project, was seeing if I could get cpp-ethereum running on a smartwatch.
 [1381.7s] And I didn't—that. But Geth worked. Geth worked on a smartwatch. And it was because it was so
 [1387.9s] early, right, that the chain was quite small. It was kind of just about
@@ -449,29 +449,29 @@ Bob:
 [1401.9s] desktop, right, with Mist. You know, Mist—Mist having embedded. Yeah, it was just a thought
 [1408.3s] that, yeah, you know, it might be a bit slow, but, you know, we'll optimize it. It'll get 10x, it'll get 100x.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1413.8s] Yeah, none of those people have ever built a mobile app before, obviously.
 [1439.0s] You're gonna have—
 [1421.8s] every router, it will just be like an OS level sort of service.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1426.0s] Building a mobile app sucks.
 [1427.1s] It's hard. It's really hard.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1430.0s] Getting approved by Apple especially. Oh, that's like a—that's like a nightmarish—
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1434.9s] I think that was the easy part, dude. That was good. It's like that's hard, but that was the
 [1440.4s] easy part. It's like building a Web3 app that's multi-chain on multiple operating systems is just—
 [1448.2s] the amount of edge cases that exist is a nightmare.
 [1451.8s] That's like been the hardest part. Like our last—like we launched in June, or like May, June, and
 [1457.5s] then literally all summer was just like hardening the app and discovering and smoothing over edge case.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [1463.6s] And I see you've just launched on Android as well. Congratulations.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1470.0s] Thank you. Publicly at
 [1471.4s] least, you know, we've been—we've been like—I'm a big soft launch guy if you can. We're always
 [1476.1s] probably soft releasing something ahead of time if you dig hard enough. But yeah,
@@ -494,24 +494,24 @@ Brian:
 [1571.8s] repo, just to help with all of these—all these hardships that we had to go through firsthand,
 [1577.3s] essentially.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1580.0s] Yeah, I remember, you know, my last company was a mobile company. To make sure things
 [1583.2s] ran on like iOS, we ran it on two devices in the simulator. We had a table of Android devices,
 [1590.8s] like, and just to kind of like test all the configurations. But in fact,
 [1594.0s] there's probably—
 [1595.7s] I don't know, ten thousand, more than ten thousand different—
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1595.0s] Like, yeah, I got this—
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1601.0s] Yeah, I mean,
 [1601.8s] I got a couple over here too. But like, you know, like TVs and tablets and whatever, right? They're
 [1608.6s] all different. And they're all—I—I'm really curious, like, you know, when you made that evolution to a
 [1614.1s] founder, as you were talking about before, what—what was the biggest challenge that you faced, do
 [1619.0s] you think? The biggest challenge—
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1631.0s] It evolves over time, right? Like as I level up as a founder,
 [1632.1s] the challenges get bigger and bigger and bigger and bigger and bigger and bigger and bigger and
 [1633.8s] bigger in a way. I think in the early days, one, it was getting people to align with my vision.
@@ -547,21 +547,21 @@ Brian:
 [1783.3s] and all of this would have been on him. And it made it much easier being able to share that
 [1787.6s] experience.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [1789.0s] That's awesome. But yeah, it's—it's—as you say, every—every step there's a new challenge.
 [1795.8s] But, you know, I think it's also like just kind of being excited. Like you—you work really, really
 [1802.2s] hard, as we can see. So, like, I think it's really exciting to hear about where you've gotten to
 [1808.1s] with this project and just in general.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1811.0s] Thank you. So, yeah.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [1812.0s] So, yeah,
 [1813.3s] looking at the time, Brian, so let me just ask you one last question, perhaps.
 [1819.5s] When—when are we ready for the normies?
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1820.0s] We're already ready for the normies. At least
 [1825.8s] Pistachio is, right? We can—we made it so that onboarding is very smooth, very easy. You
 [1833.2s] don't have to worry about seed phrases. You don't have to worry about even having your
@@ -591,35 +591,35 @@ Brian:
 [1962.4s] So I think we're ready for normies right now, but it's just about increasing the amount of—increasing the use cases within the app to solve very distinct pains.
 [1977.3s] Painful, expensive pains. That's the way to do it.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [1982.6s] OK, well, thank you very much.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1984.0s] Thank you guys for having me.
 [1986.8s] Yeah, I know you got to run.
 
-Kieren:
+[Kieren]({{ '/people/kieren-james-lubin/' | relative_url }}):
 [1989.7s] I hope that at least some of us will be at some of the international events.
 [1994.7s] Maybe we can catch up there.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [1996.0s] Yeah, perfect.
 [1997.0s] Please, if you guys are going to eat for that time in Brazil or DevConnect, I'll be at both of them.
 
-Victor:
+[Victor]({{ '/people/victor-wing/' | relative_url }}):
 [2000.9s] So we will definitely be there. Look forward to seeing you in person.
 [2005.0s] And I want to see your talk. Share us details about your talk, man.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [2008.8s] Yeah, absolutely. Will do. Take care.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [2011.6s] OK, thanks so much.
 
-Brian:
+[Brian](https://x.com/BSmokes_):
 [2013.0s] Thanks. It's great to meet you, Bob.
 
-Bob:
+[Bob]({{ '/people/bob-summerwill/' | relative_url }})
 [2016.0s] You too. Cheers.
 
 <a id="our-principles"></a>
