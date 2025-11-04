@@ -264,6 +264,19 @@ echo -e "${GREEN}✓ WhisperX patches applied successfully${NC}"
 echo ""
 
 # ==============================================================================
+# Step 7.5: Upgrade pyannote.audio (REQUIRED)
+# ==============================================================================
+# WhisperX initially installs pyannote.audio 3.x (its dependency requirement).
+# Now that patches are applied, upgrade to 4.0.1+ for PyTorch 2.10+ compatibility.
+# This step is done AFTER patching because patches make WhisperX compatible with 4.0.1.
+# ==============================================================================
+echo -e "${YELLOW}[7.5/10] Upgrading pyannote.audio to 4.0.1+...${NC}"
+echo "WhisperX installed pyannote.audio 3.x, upgrading to 4.0.1+ for PyTorch compatibility"
+pip install --upgrade "pyannote.audio>=4.0.1"
+echo -e "${GREEN}✓ pyannote.audio upgraded successfully${NC}"
+echo ""
+
+# ==============================================================================
 # Step 8: LD_LIBRARY_PATH Configuration (NVIDIA Only)
 # ==============================================================================
 # PyTorch nightly packages cuDNN as a separate pip package in nvidia/cudnn/lib.

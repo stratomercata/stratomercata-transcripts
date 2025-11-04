@@ -12,17 +12,17 @@
 # ==============================================================================
 
 # WhisperX (latest git) - PyPI version 3.7.4 outdated, needs patches for pyannote.audio 4.0.1
-# Pulls in faster-whisper, transformers, ctranslate2
+# Pulls in faster-whisper, transformers, ctranslate2, and pyannote.audio 3.x (which we upgrade later)
 whisperx @ git+https://github.com/m-bain/whisperx.git
-
-# pyannote.audio 4.0.1+ - REQUIRED for PyTorch 2.10+ compatibility
-# Older versions (3.x) incompatible with PyTorch nightly
-# Pulls in: pyannote.core, pyannote.database, pytorch-lightning, opentelemetry, numpy>=2.0, pandas, scipy
-pyannote.audio>=4.0.1
 
 # SpeechBrain (latest git) - PyPI version may have PyTorch 2.10+ compatibility issues
 # Pulls in torch-audiomentations, torchaudio-augmentations
 speechbrain @ git+https://github.com/speechbrain/speechbrain.git
 
-# Post-Installation: Run install_packages_and_venv.sh or manually apply WhisperX patches
-# See SETUP_RTX_5070.md for complete setup instructions
+# NOTE: pyannote.audio is NOT listed here to avoid version conflicts
+# WhisperX requires pyannote.audio<4.0.0, but we need 4.0.1+ for PyTorch 2.10+ compatibility
+# The install_packages_and_venv.sh script handles this by:
+#   1. Installing these packages (WhisperX pulls in pyannote.audio 3.x)
+#   2. Applying WhisperX patches to work with pyannote.audio 4.0.1
+#   3. Upgrading to pyannote.audio 4.0.1 after patches applied
+# Manual install: pip install --upgrade pyannote.audio after applying patches
