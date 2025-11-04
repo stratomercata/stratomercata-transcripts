@@ -11,9 +11,18 @@
 #
 # ==============================================================================
 
-# WhisperX (latest git) - PyPI version 3.7.4 outdated, needs patches for pyannote.audio 4.0.1
-# Pulls in faster-whisper, transformers, ctranslate2, and pyannote.audio 3.x (which we upgrade later)
-whisperx @ git+https://github.com/m-bain/whisperx.git
+# WhisperX 3.7.4 - Using PyPI version for reproducibility and faster installs
+# NOTE: WhisperX has restrictive dependency constraints that conflict with our needs:
+#   - Requires torch~=2.8.0 (we need 2.10+ for RTX 5070 Blackwell support)
+#   - Requires pyannote-audio<4.0.0 (we need 4.0.1+ for PyTorch 2.10+ compatibility)
+# These conflicts are handled by install_packages_and_venv.sh:
+#   1. Install PyTorch 2.10+ first (before WhisperX)
+#   2. Install WhisperX (pulls in pyannote 3.x, tries to downgrade PyTorch)
+#   3. Apply code patches to WhisperX for pyannote 4.0.1 compatibility
+#   4. Force-reinstall PyTorch 2.10+ (step 7.6 in script)
+#   5. Upgrade to pyannote-audio 4.0.1+ (step 7.5 in script)
+# Pulls in faster-whisper, transformers, ctranslate2, and other dependencies
+whisperx==3.7.4
 
 # SpeechBrain (latest git) - Using git version for latest features and compatibility
 # PyPI version 1.0.3 requires torch>=1.9 (compatible with 2.10+)
