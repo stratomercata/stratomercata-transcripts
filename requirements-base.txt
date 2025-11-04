@@ -15,8 +15,16 @@
 # Pulls in faster-whisper, transformers, ctranslate2, and pyannote.audio 3.x (which we upgrade later)
 whisperx @ git+https://github.com/m-bain/whisperx.git
 
-# SpeechBrain (latest git) - PyPI version may have PyTorch 2.10+ compatibility issues
+# SpeechBrain (latest git) - Using git version for latest features and compatibility
+# PyPI version 1.0.3 requires torch>=1.9 (compatible with 2.10+)
+# Git version ensures compatibility with latest WhisperX/pyannote.audio updates
 # Pulls in torch-audiomentations, torchaudio-augmentations
+#
+# WHEN TO SWITCH TO STABLE PyPI VERSION:
+# - When a newer PyPI version (>1.0.3) is released with features we need
+# - After verifying compatibility with our PyTorch nightly and pyannote.audio 4.0.1+
+# - For production deployments requiring version pinning for reproducibility
+# - Replace with: speechbrain>=X.Y.Z (where X.Y.Z is the verified stable version)
 speechbrain @ git+https://github.com/speechbrain/speechbrain.git
 
 # NOTE: pyannote.audio is NOT listed here to avoid version conflicts
