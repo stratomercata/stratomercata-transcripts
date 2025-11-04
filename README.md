@@ -130,33 +130,33 @@ For high-quality local transcription with speaker diarization using WhisperX on 
 - CUDA 12.1+ compatible setup
 - FFmpeg
 
-**🚨 IMPORTANT: For RTX 5070 / Blackwell Architecture**
-
-**Automated setup for RTX 5070 GPU:**
+**🚨 IMPORTANT: Automated Setup Scripts**
 
 ```bash
-# Step 1: Install NVIDIA drivers
+# Step 1: Install NVIDIA drivers (RTX 5070 requires driver 565+)
+# Skip this step if you don't have an NVIDIA GPU
 sudo ./install_nvidia_drivers.sh
 sudo reboot
 
 # Step 2: Setup Python environment (after reboot)
+# Auto-detects hardware (NVIDIA GPU vs CPU)
+# For CPU-only on a GPU system, add --force-cpu
 ./install_packages_and_venv.sh
 
 # Step 3: Configure HuggingFace token
 nano setup_env.sh  # Add your HF_TOKEN
 ```
 
-📄 **[SETUP_RTX_5070.md](SETUP_RTX_5070.md)** - Complete setup guide with troubleshooting
-
 **What the scripts do:**
-- Install NVIDIA driver 565+ (RTX 50-series support)
-- Install PyTorch 2.10.0.dev nightly with CUDA 12.8 (sm_120 support)
-- Install all dependencies (cuDNN 9.10.2, pyannote.audio 4.0.1, WhisperX 3.7.4)
-- Apply WhisperX patches automatically
-- Configure LD_LIBRARY_PATH
+- Detect hardware (NVIDIA GPU vs CPU) or use `--force-cpu` flag
+- Install system dependencies (ffmpeg, build tools, Python dev)
+- Install PyTorch nightly (CUDA 12.8 for NVIDIA, CPU-only otherwise)
+- Install WhisperX, pyannote.audio, SpeechBrain
+- Apply WhisperX compatibility patches automatically
+- Configure LD_LIBRARY_PATH (NVIDIA only)
 - Run verification tests
 
-**For older GPUs (RTX 20/30/40 series):** Use stable PyTorch and skip the RTX 5070-specific setup
+**Note:** PyTorch nightly is used for all hardware to support RTX 5070 Blackwell (sm_120). Will switch to stable PyTorch 2.6+ when available (Q1-Q2 2026).
 
 #### NVIDIA Driver Installation
 

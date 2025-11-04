@@ -29,7 +29,12 @@
 #   - sudo access for system package installation
 #
 # USAGE:
-#   ./install_packages_and_venv.sh
+#   ./install_packages_and_venv.sh              # Auto-detect hardware
+#   ./install_packages_and_venv.sh --force-cpu  # Force CPU-only mode
+#
+# OPTIONS:
+#   --force-cpu    Force CPU-only installation even if NVIDIA GPU is present
+#                  Useful for testing or when you want CPU mode on GPU system
 #
 # POST-INSTALLATION:
 #   1. Get HuggingFace token: https://huggingface.co/settings/tokens
@@ -58,6 +63,22 @@ NC='\033[0m'           # No Color (reset)
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # Script's directory
 VENV_DIR="$PROJECT_DIR/venv"                                   # Virtual environment location
 
+# Parse command-line arguments
+FORCE_CPU=false
+for arg in "$@"; do
+    case $arg in
+        --force-cpu)
+            FORCE_CPU=true
+            shift
+            ;;
+        *)
+            echo -e "${RED}Error: Unknown option: $arg${NC}"
+            echo "Usage: $0 [--force-cpu]"
+            exit 1
+            ;;
+    esac
+done
+
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}Python Environment Setup for WhisperX${NC}"
 echo -e "${BLUE}========================================${NC}"
@@ -69,10 +90,16 @@ echo ""
 # Detect if an NVIDIA GPU is present to determine which PyTorch variant to install.
 # Uses nvidia-smi command which is only available with NVIDIA drivers installed.
 # Sets HAS_NVIDIA flag used throughout script for conditional logic.
+# Can be overridden with --force-cpu flag to force CPU-only installation.
 # ==============================================================================
 echo -e "${YELLOW}[1/10] Detecting hardware...${NC}"
-echo "Checking for NVIDIA GPU to determine PyTorch installation type"
-if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+
+if [ "$FORCE_CPU" = true ]; then
+    HAS_NVIDIA=false
+    echo -e "${YELLOW}--force-cpu flag detected${NC}"
+    echo -e "${YELLOW}⚠ Forcing CPU-only mode (ignoring any NVIDIA GPU)${NC}"
+    echo "Will install PyTorch nightly CPU-only version"
+elif command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
     HAS_NVIDIA=true
     GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo "NVIDIA GPU")
     echo -e "${GREEN}✓ Detected NVIDIA GPU: $GPU_NAME${NC}"

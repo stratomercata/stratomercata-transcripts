@@ -1,357 +1,143 @@
-# WhisperX Video Transcription Pipeline
-
-A complete pipeline for automatically transcribing video/audio files with speaker identification (diarization) and formatting for Jekyll websites.
+# WhisperX Transcription Pipeline
+# ==============================================================================
+# Automated audio/video transcription with speaker diarization for Jekyll sites
+# ==============================================================================
+#
+# WHAT THIS DOES:
+# - Converts audio/video to text using OpenAI's Whisper AI model
+# - Identifies speakers using pyannote.audio voice analysis
+# - Maps generic speaker labels (SPEAKER_01) to actual names
+# - Formats output as Jekyll-ready markdown
+#
+# PERFORMANCE:
+# - RTX 5070 GPU: 79-minute audio in 5.2 minutes (~15x realtime)
+# - Manual transcription: Same audio takes 8-13 hours
+# - Speed improvement: ~95-150x faster than manual
+# - Accuracy: 95%+ with good audio quality
+#
+# WHY USE THIS:
+# - Free after GPU purchase (vs $1-2/hour cloud GPUs)
+# - Processes while you work on other tasks
+# - Consistent quality and formatting
+# - Automatic speaker identification
+#
+# WHEN TO USE AUTOMATED SCRIPTS:
+# - RTX 5070 Blackwell GPU: Use ./install_packages_and_venv.sh (see below)
+# - Other NVIDIA GPUs: Manual setup or use automated scripts
+# - CPU-only systems: Use ./install_packages_and_venv.sh --force-cpu
+#
+# ==============================================================================
 
 ---
 
-## 🚨 RTX 5070 / Blackwell GPU Users
+## Quick Setup (Automated)
 
-**If you have an NVIDIA GeForce RTX 5070, use the automated setup scripts:**
+**For all systems (auto-detects hardware):**
 
 ```bash
-# Step 1: Install NVIDIA drivers
+# Step 1: Install NVIDIA drivers (skip if no NVIDIA GPU)
 sudo ./install_nvidia_drivers.sh
 sudo reboot
 
-# Step 2: Setup Python environment (after reboot)
+# Step 2: Setup Python environment
+# Auto-detects hardware or use --force-cpu for CPU-only
 ./install_packages_and_venv.sh
 
 # Step 3: Configure HuggingFace token
-nano setup_env.sh  # Add your HF_TOKEN
+nano setup_env.sh  # Add your HF_TOKEN from https://huggingface.co/settings/tokens
 ```
 
-📄 **[SETUP_RTX_5070.md](SETUP_RTX_5070.md)** - Complete setup guide with troubleshooting
-
-The scripts automate everything: driver installation, PyTorch nightly, WhisperX patches, LD_LIBRARY_PATH configuration, and verification tests.
-
-**For other GPUs (RTX 20/30/40, GTX 16-series, AMD), continue with the manual setup below** ⬇️
-
----
-
-## Table of Contents
-- [What This Does (ELI5)](#what-this-does-eli5)
-- [Quick Start](#quick-start)
-- [Setup Guide](#setup-guide)
-- [Script Reference](#script-reference)
-- [Performance & Hardware](#performance--hardware)
-- [Troubleshooting](#troubleshooting)
+**What it installs:**
+- System dependencies (ffmpeg, build tools, Python dev)
+- PyTorch nightly (CUDA 12.8 for NVIDIA, CPU-only otherwise)
+- WhisperX, pyannote.audio, SpeechBrain
+- Applies compatibility patches automatically
+- Configures LD_LIBRARY_PATH (NVIDIA only)
 
 ---
 
-## What This Does (ELI5)
+## Usage
 
-This pipeline takes an audio/video file of a podcast or interview and automatically:
+### HuggingFace Token Setup
 
-1. **Transcribes the audio** - Converts speech to text with timestamps using OpenAI's Whisper AI model
-2. **Identifies speakers** - Figures out who's talking when (Bob, Kieren, Jim, etc.) using AI voice analysis
-3. **Maps speakers to names** - Changes generic labels like "SPEAKER_01" to actual names like "Bob Summerwill"
-4. **Formats for website** - Creates a nice markdown file ready to publish on your Jekyll website
+Required for pyannote.audio models:
 
-### Real Example:
-**Input:** `episode003-bob-summerwill.mp3` (79 minute audio file)
+1. Get token: https://huggingface.co/settings/tokens
+2. Accept model agreements:
+   - https://huggingface.co/pyannote/speaker-diarization-3.1
+   - https://huggingface.co/pyannote/segmentation-3.0
+3. Configure in setup_env.sh (already done if you used automated scripts)
 
-**Output:** A formatted markdown file with:
-```markdown
-**Bob Summerwill:**
-[57.1s] So, yeah, hi, you know, thanks so much for the invite...
+### Complete Pipeline
 
-**Kieren James-Lubin:**
-[1.2s] Well, thanks everyone for coming back...
-```
-
-### Why Use This vs Manual Transcription?
-
-**For a 79-minute audio file (episode003-bob-summerwill.mp3):**
-- **Manual transcription:** ~8-13 hours (estimated)
-- **RTX 5070 GPU (this pipeline):** 5.2 minutes total
-  - Transcription: 98.7 seconds (~1.6 min)
-  - Diarization: 208.6 seconds (~3.5 min)
-  - Speaker assignment: ~6 seconds
-- **Accuracy:** 95%+ with good audio quality
-- **Cost:** Free after GPU purchase
-
-**Speed improvement: ~95-150x faster than manual transcription!**
-
----
-
-## Quick Start
-
-**For RTX 5070 users:** See [SETUP_RTX_5070.md](SETUP_RTX_5070.md) for automated setup scripts.
-
-**For other GPUs:**
 ```bash
-# 1. Set up environment (one-time setup)
-python3 -m venv venv
+# Activate environment
 source venv/bin/activate
-pip install -r requirements.txt
-
-# 2. Get a Hugging Face token (free)
-# Visit: https://huggingface.co/settings/tokens
-# Accept model agreements:
-#   - https://huggingface.co/pyannote/speaker-diarization-3.1
-#   - https://huggingface.co/pyannote/segmentation-3.0
-export HF_TOKEN="your_token_here"
-
-# 3. Run the complete pipeline
-python3 diarize_and_combine.py path/to/audio.mp3
-
-# 4. Map speakers to names (edit the script first with correct names)
-python3 map_speakers_to_names.py output_transcript_with_speakers.txt
-
-# 5. Format for markdown
-python3 format_transcript_for_markdown.py output_with_names.txt formatted.txt
-```
-
----
-
-## Setup Guide
-
-### Prerequisites
-- Python 3.8 or later
-- 8GB+ RAM (16GB recommended)
-- GPU highly recommended (see [Performance](#performance--hardware))
-
-### Step 1: Create Virtual Environment
-
-```bash
-# Create virtual environment
-python3 -m venv venv
-
-# Activate it
-source venv/bin/activate  # Linux/macOS
-# OR
-venv\Scripts\activate  # Windows
-```
-
-### Step 2: Install Dependencies
-
-**For RTX 5070 / Blackwell architecture (sm_120):**
-See **[SETUP_RTX_5070.md](SETUP_RTX_5070.md)** - automated scripts handle everything.
-
-**For Older NVIDIA GPUs (GTX 16/RTX 20/30/40-series):**
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-pip install -r requirements.txt
-```
-
-**AMD GPUs (ROCm):**
-```bash
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
-pip install -r requirements.txt
-```
-
-**CPU Only:**
-```bash
-pip install -r requirements.txt
-# Works but is MUCH slower
-```
-
-### Step 3: Get Hugging Face Token
-
-1. Create account at [huggingface.co](https://huggingface.co)
-2. Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
-3. Create a new token (read access is enough)
-4. Accept model agreements:
-   - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
-   - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
-
-Set the token:
-```bash
 export HF_TOKEN="hf_YourTokenHere"
 
-# Or add to your ~/.bashrc or ~/.zshrc:
-echo 'export HF_TOKEN="hf_YourTokenHere"' >> ~/.bashrc
+# 1. Transcribe with speaker identification
+python3 diarize_and_combine.py audio.mp3
+# Output: audio_transcript_with_speakers.txt
+
+# 2. Map speaker labels to names (edit map_speakers_to_names.py first)
+python3 map_speakers_to_names.py audio_transcript_with_speakers.txt
+# Output: audio_transcript_with_speakers_with_names.txt
+
+# 3. Format for Jekyll
+python3 format_transcript_for_markdown.py \
+    audio_transcript_with_speakers_with_names.txt \
+    formatted.txt
+# Output: formatted.txt (ready for Jekyll)
 ```
 
-### Step 4: Verify Installation
+### Speaker Mapping
 
-```bash
-python3 test_rocm.py  # Or test_cuda.py for NVIDIA
-```
-
-Should show:
-```
-PyTorch version: 2.0.1
-CUDA/ROCm available: True
-Device count: 1
-Device: AMD Radeon RX 7900 XTX
-```
-
----
-
-## Script Reference
-
-### Core Pipeline Scripts
-
-#### 1. `diarize_and_combine.py`
-**Purpose:** Complete pipeline - transcription + speaker identification
-
-**Usage:**
-```bash
-python3 diarize_and_combine.py audio_file.mp3
-```
-
-**What it does:**
-1. Transcribes audio using WhisperX (Whisper + word-level timestamps)
-2. Identifies speakers using pyannote.audio diarization
-3. Combines transcription with speaker labels
-4. Outputs: `filename_transcript_with_speakers.txt`
-
-**Options:**
-- Automatically uses GPU if available
-- Falls back to CPU if no GPU detected
-- Uses "large-v2" Whisper model (best accuracy)
-
-**Output format:**
-```
-SPEAKER_01:
-[0.0s] Text from speaker 1...
-
-SPEAKER_02:
-[15.3s] Text from speaker 2...
-```
-
-#### 2. `map_speakers_to_names.py`
-**Purpose:** Replace SPEAKER_XX with actual names
-
-**Usage:**
-```bash
-python3 map_speakers_to_names.py input_transcript.txt --output output.txt
-```
-
-**Important:** Edit the `SPEAKER_MAP` dictionary in the script first:
+Before running step 2, edit `map_speakers_to_names.py`:
 
 ```python
 SPEAKER_MAP = {
-    'SPEAKER_01': 'Bob Summerwill',    # Most segments
-    'SPEAKER_02': 'Kieren James-Lubin', # Host
-    'SPEAKER_03': 'Jim Hormuzdiar',     # Co-host
-    # ... etc
+    'SPEAKER_01': 'Bob Summerwill',     # Usually main guest (most segments)
+    'SPEAKER_02': 'Kieren James-Lubin', # Usually host
+    'SPEAKER_03': 'Jim Hormuzdiar',     # Usually co-host
 }
 ```
 
-**How to determine mapping:**
-1. Look at the `_transcript_with_speakers.txt` file
-2. Read the early conversation to identify who's who
-3. Check segment counts (script reports statistics)
-4. Main guest usually has most segments
-
-#### 3. `format_transcript_for_markdown.py`
-**Purpose:** Convert to Jekyll-ready markdown format
-
-**Usage:**
-```bash
-python3 format_transcript_for_markdown.py input.txt output.txt
-```
-
-**What it does:**
-Converts from:
-```
-Bob Summerwill:
-[57.1s] So, yeah, hi...
-[60.4s] Thanks for having me...
-```
-
-To:
-```markdown
-**Bob Summerwill:**
-[57.1s] So, yeah, hi...
-[60.4s] Thanks for having me...
-```
-
-### Helper/Test Scripts
-
-#### `test_diarization.py`
-Tests speaker diarization in isolation
-```bash
-python3 test_diarization.py
-```
-
-#### `test_diarization_hf.py`
-Tests Hugging Face authentication
-```bash
-python3 test_diarization_hf.py
-```
-
-#### `test_rocm.py` / `test_cuda.py`
-Tests GPU availability and PyTorch setup
-```bash
-python3 test_rocm.py
-```
-
-### Legacy Formatting Scripts
-
-These were used to format older transcripts. You probably don't need them:
-- `merge_speaker_paragraphs.py` - Merge consecutive lines from same speaker
-- `complete_formatting.py` - Apply multiple formatting steps
-- `organize_sections.py` - Split transcript into titled sections (video-specific)
-- `convert_timestamps.py`, `fix_capitalization.py`, etc. - Various cleanup utilities
+**How to identify speakers:**
+1. Read first few pages of `_transcript_with_speakers.txt`
+2. Match speaking patterns to known participants
+3. Script reports segment counts to help identify main speakers
 
 ---
 
-## Performance & Hardware
+## Performance
 
-### Processing Time Comparison
+### Hardware Benchmarks
 
-**Actual measured performance on RTX 5070:**
-
-**79-minute audio (episode003-bob-summerwill.mp3):**
-- Transcription: 98.7 seconds (1.6 minutes)
-- Diarization: 208.6 seconds (3.5 minutes)
-- Speaker assignment: ~6 seconds
-- **Total: 314.7 seconds (5.2 minutes)**
-- **Speed: ~15x realtime**
-
-**58-minute audio (institutions_want_tokens.mp3):**
-- Transcription: 65 seconds (1.1 minutes)
-- Diarization: Not tested
-- **Speed: ~53x realtime for transcription only**
-
-**Manual transcription (estimated):**
-- 79-minute audio: ~8-13 hours
-- **RTX 5070 is ~95-150x faster than manual transcription**
-
-**GPU Performance:**
-- GPU utilization: 90-95% during processing
+**RTX 5070 (12GB VRAM, Blackwell/sm_120):**
+- 79-min audio: 5.2 minutes total (transcription + diarization)
+- 58-min audio: 65 seconds (transcription only, ~53x realtime)
+- GPU utilization: 90-95%
 - VRAM usage: 8-10GB peak
-- Batch processing: Can handle multiple files back-to-back
 
-### Hardware Recommendations
+**Manual transcription estimate:**
+- 79-min audio: 8-13 hours
+- **Speed improvement: ~95-150x faster**
+
+### Hardware Requirements
 
 **Minimum (CPU only):**
-- 8GB RAM
-- 50GB free disk space
-- Be prepared to wait hours
+- 8GB RAM, 50GB disk space
+- Expect hours of processing time
 
 **Recommended (GPU):**
-- NVIDIA GPU: GTX 1660 or better (6GB+ VRAM)
-- AMD GPU: RX 6600 or better (8GB+ VRAM)
-- 16GB system RAM
-- 50GB free disk space
+- NVIDIA: GTX 1660+ (6GB+ VRAM) or RTX 20/30/40/50 series
+- AMD: RX 6600+ (8GB+ VRAM)
+- 16GB RAM, 50GB disk space
 
 **Optimal:**
-- NVIDIA RTX 5070/4090 or AMD RX 7900 XTX (latest architectures)
-- NVIDIA RTX 3090/4090 or AMD RX 7900 XTX (previous gen)
-- 32GB system RAM
-- SSD for faster model loading
-- For RTX 5070: PyTorch 2.10.0 nightly + manual WhisperX patching required
-
-### GPU vs CPU: What's the Difference?
-
-**How It Works:**
-- AI models (Whisper, pyannote) do millions of mathematical operations
-- GPUs have thousands of cores optimized for parallel math
-- CPUs have fewer cores designed for general tasks
-
-**Analogy:**
-- CPU: 8-16 smart workers who can do anything
-- GPU: 5,000 specialized workers who are amazing at one specific task
-- For AI transcription, you want the army of specialists
-
-**Cost Consideration:**
-- Cloud GPU (AWS/Google): ~$1-2/hour
-- 45 min processing = ~$1.50 per video
-- If you process videos regularly, owning a GPU pays for itself
+- NVIDIA RTX 5070/4090 or AMD RX 7900 XTX
+- 32GB RAM, SSD storage
+- For RTX 5070: Use automated setup scripts
 
 ---
 
@@ -359,329 +145,163 @@ These were used to format older transcripts. You probably don't need them:
 
 ### Common Issues
 
-#### 1. "HF_TOKEN environment variable not set"
-
-**Problem:** Hugging Face token not configured
-
-**Solution:**
+**"HF_TOKEN environment variable not set"**
 ```bash
 export HF_TOKEN="hf_YourTokenHere"
-
-# Verify it's set:
-echo $HF_TOKEN
+echo 'export HF_TOKEN="hf_YourTokenHere"' >> ~/.bashrc  # Make permanent
 ```
 
-Make it permanent by adding to `~/.bashrc` or `~/.zshrc`.
+**"Permission denied" for model access**
+- Visit pyannote model pages and click "Agree and access repository"
+- Links: https://huggingface.co/pyannote/speaker-diarization-3.1
+- Wait 1-2 minutes for permissions to propagate
 
-#### 2. "Permission denied" for model access
+**"CUDA out of memory"**
+- Use smaller Whisper model: Edit `diarize_and_combine.py` 
+- Change `"large-v2"` to `"medium"` or `"small"`
 
-**Problem:** Haven't accepted pyannote model agreements
+**"CUDA capability sm_120 not supported"**
+- Install PyTorch nightly: `pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128`
+- Or use automated setup scripts
 
-**Solution:**
-1. Visit [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
-2. Click "Agree and access repository"
-3. Do the same for [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
-4. Wait 1-2 minutes for permissions to propagate
-
-#### 3. "CUDA out of memory" or similar GPU errors
-
-**Problem:** GPU doesn't have enough VRAM
-
-**Solutions:**
-```python
-# In diarize_and_combine.py, use smaller Whisper model:
-model = whisperx.load_model("medium", device, compute_type="float16")
-# Options: tiny, base, small, medium, large-v2
-```
-
-Or process smaller chunks of audio at a time.
-
-#### 4. Very slow performance on GPU
-
-**Check:**
-```bash
-python3 -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
-```
-
-If it says `False`, PyTorch isn't using your GPU. Reinstall with the correct version:
-
-**For NVIDIA:**
-```bash
-pip uninstall torch torchaudio
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-**For AMD:**
-```bash
-pip uninstall torch torchaudio
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
-```
-
-#### 5. Speaker diarization is inaccurate
-
-**Causes:**
-- Poor audio quality
-- Many overlapping speakers
-- Background noise
-- Similar-sounding voices
-
-**Improvements:**
-- Use high-quality audio (clean podcast-style recordings work best)
-- Pre-process audio to remove noise
-- Manually review and correct speaker labels
-- Adjust diarization parameters (advanced)
-
-#### 6. Transcription has many errors
-
-**Causes:**
-- Heavy accents
-- Technical jargon
-- Poor audio quality
-- Quiet speakers
-
-**Solutions:**
-- Use the largest Whisper model (`large-v2`)
-- Improve audio quality (noise reduction, normalization)
-- Expect to do manual cleanup for technical terms
-- Consider using Whisper's language parameter if not English
-
-#### 7. cuDNN Loading Errors (RTX 5070 and PyTorch Nightly)
-
-**Problem:** "Unable to load libcudnn_cnn.so.9"
-
-**Cause:** PyTorch nightly bundles cuDNN but the system can't find it
-
-**Solution:** Set LD_LIBRARY_PATH before running:
+**"Unable to load libcudnn_cnn.so.9"**
 ```bash
 export LD_LIBRARY_PATH=venv/lib/python3.12/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH
-
-# Then run transcription
-python3 transcribe_with_diarization.py audio.mp3
-
-# Or add to your shell profile for convenience:
-echo 'export LD_LIBRARY_PATH=venv/lib/python3.12/site-packages/nvidia/cudnn/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 ```
 
-#### 8. RTX 5070 / Blackwell Architecture (sm_120) Issues
-
-**Problem:** "CUDA capability sm_120 is not compatible with the current PyTorch installation"
-
-**Cause:** PyTorch stable releases (2.8.0, 2.9.0) don't support Blackwell architecture yet (CUDA compute capability sm_120)
-
-**Solution:** Install PyTorch nightly with CUDA 12.8:
-```bash
-# Uninstall current PyTorch
-pip uninstall torch torchvision torchaudio -y
-
-# Install PyTorch nightly (REQUIRED for RTX 5070)
-pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
-
-# Upgrade pyannote.audio for compatibility
-pip install --upgrade pyannote.audio
-
-# Install remaining dependencies
-pip install -r requirements.txt
-```
-
-**Problem:** "AttributeError: module 'torchaudio' has no attribute 'AudioMetaData'"
-
-**Cause:** pyannote.audio 3.4.0 is incompatible with PyTorch 2.10+
-
-**Solution:**
-```bash
-pip install --upgrade pyannote.audio
-# This installs pyannote.audio 4.0.1 which is compatible
-```
-
-**Problem:** NVIDIA driver shows older CUDA version (<12.8)
-
-**Cause:** Outdated NVIDIA drivers don't support RTX 50-series GPUs
-
-**Solution:**
-```bash
-# Install latest NVIDIA drivers
-sudo apt update
-sudo apt install nvidia-driver-565  # or latest
-sudo reboot
-
-# Verify after reboot
-nvidia-smi
-# Should show CUDA Version: 12.8 or newer
-```
-
-**Problem:** "TypeError: ... got an unexpected keyword argument 'use_auth_token'"
-
-**Cause:** WhisperX patches weren't applied - pyannote.audio 4.0.1 uses `token` not `use_auth_token`
-
-**Solution:** Apply the manual patches:
+**"TypeError: got unexpected keyword 'use_auth_token'"**
+- Apply WhisperX patches:
 ```bash
 sed -i 's/use_auth_token/token/g' venv/lib/python3.12/site-packages/whisperx/vads/pyannote.py
 sed -i '412s/use_auth_token=None/token=None/' venv/lib/python3.12/site-packages/whisperx/asr.py
 ```
 
-**Version Compatibility Warnings:**
-WhisperX 3.7.4 shows warnings about requiring PyTorch ~=2.8.0, but it works with PyTorch nightly 2.10.0. These dependency warnings can be safely ignored as long as transcription runs successfully. The manual patches ensure API compatibility with pyannote.audio 4.0.1.
+**PyTorch can't find GPU**
+- Verify: `python3 -c "import torch; print(torch.cuda.is_available())"`
+- If False, reinstall PyTorch with correct CUDA version
 
-**RTX 5070 Performance:**
-Transcription performance on RTX 5070 (Blackwell architecture) is exceptional:
-- **Transcription speed:** ~65 seconds for 58-minute audio (~53x realtime)
-- **GPU utilization:** 90-95% during transcription
-- **VRAM usage:** 8-10GB peak
-- **sm_120 compute capability:** Fully supported with PyTorch 2.10.0 nightly
+### RTX 5070 Specific
+
+**Requirements:**
+- PyTorch 2.10.0.dev nightly (not stable)
+- CUDA 12.8 support
+- NVIDIA driver 565+
+- WhisperX patches applied
+
+**Why:** Blackwell architecture (sm_120) not in stable PyTorch yet
+
+**When to switch:** PyTorch 2.6+ stable (expected Q1-Q2 2026)
 
 **Verification:**
-After setup, verify everything works:
 ```bash
-python3 -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}'); x = torch.randn(10,10, device='cuda'); print('GPU test passed:', x.matmul(x).sum().item())"
+python3 -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.cuda.is_available()}'); print(f'GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
 ```
 
 Expected output:
 ```
 PyTorch: 2.10.0.dev20251103+cu128
-CUDA available: True
+CUDA: True
 GPU: NVIDIA GeForce RTX 5070
-GPU test passed: 42.857...
-```
-
----
-
-## Full Workflow Example
-
-Here's a complete real-world example for processing a 60-minute podcast:
-
-```bash
-# 1. Activate environment
-source venv/bin/activate
-export HF_TOKEN="hf_YourTokenHere"
-
-# 2. Run transcription + diarization (30-45 min on GPU)
-python3 diarize_and_combine.py podcast_episode5.mp3
-
-# Output: podcast_episode5_transcript_with_speakers.txt
-
-# 3. Review the output to identify speakers
-head -100 podcast_episode5_transcript_with_speakers.txt
-
-# You'll see patterns like:
-# SPEAKER_00: 15 brief segments - probably intermittent speaker
-# SPEAKER_01: 450 segments - likely main guest
-# SPEAKER_02: 120 segments - likely host
-
-# 4. Edit map_speakers_to_names.py with correct mapping:
-# SPEAKER_MAP = {
-#     'SPEAKER_01': 'Guest Name',
-#     'SPEAKER_02': 'Host Name',
-#     ...
-# }
-
-# 5. Run speaker mapping
-python3 map_speakers_to_names.py podcast_episode5_transcript_with_speakers.txt
-
-# Output: podcast_episode5_transcript_with_speakers_with_names.txt
-
-# 6. Format for markdown
-python3 format_transcript_for_markdown.py \
-    podcast_episode5_transcript_with_speakers_with_names.txt \
-    podcast_episode5_formatted.txt
-
-# Output: podcast_episode5_formatted.txt
-
-# 7. Create Jekyll markdown file
-# Manually create: source/_videos/podcast-episode-5.md
-# Add YAML front matter, then append the formatted transcript
-
-# 8. Commit and deploy
-git add source/_videos/podcast-episode-5.md
-git commit -m "Add Episode 5 transcript"
-git push
 ```
 
 ---
 
 ## Tips & Best Practices
 
-### Audio Quality Matters
-- **Good:** Clean podcast-style recordings, one speaker at a time
-- **Bad:** Conference calls, noisy environments, multiple overlapping speakers
-- **Tip:** Use Audacity or similar to normalize audio levels before processing
+### Audio Quality
+- **Good:** Clean podcast recordings, one speaker at a time
+- **Bad:** Conference calls, overlapping speakers, noisy backgrounds
+- **Tip:** Normalize audio levels with Audacity before processing
 
-### Verify Early
-- Run the first 5 minutes through the pipeline before processing full audio
-- Check accuracy and speaker identification
-- Adjust settings if needed before wasting time on poor results
+### Workflow
+1. Test first 5 minutes before processing full audio
+2. Keep all intermediate files (can re-run mapping without re-transcribing)
+3. Expect 10-20% manual review of transcripts
+4. GPU can batch process videos overnight
 
-### Manual Review is Normal
-- Expect to manually review 10-20% of the transcript
-- AI gets 95%+ accuracy, but you'll find errors
-- Technical terms, names, and acronyms need attention
+### Accuracy
+- Whisper large-v2 model: 95%+ on clear audio
+- Speaker diarization: 90%+ accuracy with distinct voices
+- Technical terms/names need manual review
+- Background noise significantly impacts quality
 
-### Save Intermediate Files
-- Keep all `_transcript_with_speakers.txt` files
-- You can re-run mapping/formatting without re-transcribing
-- Transcription is the expensive part (time-wise)
+---
 
-### Batch Processing
-- Process multiple videos overnight
-- GPU can handle back-to-back processing
-- Each 60-min video ≈ 45 min processing time
+## Scripts Reference
+
+### Core Scripts
+
+**diarize_and_combine.py**
+- Complete pipeline: transcription + speaker identification
+- Auto-detects GPU or falls back to CPU
+- Uses Whisper large-v2 model (best accuracy)
+- Output: `filename_transcript_with_speakers.txt`
+
+**map_speakers_to_names.py**  
+- Replaces SPEAKER_XX with actual names
+- Edit SPEAKER_MAP dictionary before running
+- Reports segment counts to help identify speakers
+- Output: `filename_with_names.txt`
+
+**format_transcript_for_markdown.py**
+- Converts to Jekyll-ready markdown format
+- Adds ** ** around speaker names
+- Preserves timestamps
+- Output: Jekyll-compatible markdown
+
+### Test Scripts
+
+- `test_diarization.py` - Test speaker diarization only
+- `test_diarization_hf.py` - Test HuggingFace authentication
+- `test_cuda.py` / `test_rocm.py` - Test GPU availability
 
 ---
 
 ## Version Compatibility
 
-**Tested with:**
-- Python: 3.8, 3.9, 3.10, 3.11, 3.12
-- PyTorch: 2.0.0 - 2.2.0 (older GPUs), 2.10.0.dev (RTX 5070/Blackwell)
+**Tested:**
+- Python: 3.8 - 3.12
+- PyTorch: 2.0.0 - 2.2.0 (older GPUs), 2.10.0.dev (RTX 5070)
 - CUDA: 11.8, 12.1, 12.8 (nightly)
-- ROCm: 6.0, 6.2
 - Ubuntu: 20.04, 22.04, 24.04
-- macOS: 12.x, 13.x, 14.x (CPU only, no Metal support yet)
-- Windows: 10, 11 (with WSL2 for best results)
+- Windows: 10, 11 (WSL2 recommended)
 
-**GPU Compatibility:**
-- **RTX 50-series (Blackwell/sm_120):** Requires PyTorch 2.10.0.dev nightly with CUDA 12.8 + manual WhisperX patching
-- **RTX 40-series (Ada Lovelace):** Works with PyTorch 2.0+ stable
-- **RTX 30-series (Ampere):** Works with PyTorch 2.0+ stable
-
-**Known Issues:**
-- ROCm on Ubuntu 24.04: Some compatibility issues, use 22.04 for best results
-- macOS Metal GPU support: Not yet available in PyTorch
-- Windows native: Slower than WSL2, recommend using WSL2
+**GPU Support:**
+- RTX 50-series (Blackwell): PyTorch 2.10.0.dev nightly + CUDA 12.8
+- RTX 40-series (Ada Lovelace): PyTorch 2.0+ stable
+- RTX 30-series (Ampere): PyTorch 2.0+ stable
+- GTX 16-series (Turing): PyTorch 2.0+ stable
 
 ---
 
-## Additional Resources
+## Resources
 
-### Documentation
-- [WhisperX GitHub](https://github.com/m-bain/whisperX) - Official WhisperX repository
-- [Whisper by OpenAI](https://github.com/openai/whisper) - Original Whisper model
-- [pyannote.audio](https://github.com/pyannote/pyannote-audio) - Speaker diarization
-- [Hugging Face](https://huggingface.co/) - Model hosting and tokens
+**Documentation:**
+- [WhisperX GitHub](https://github.com/m-bain/whisperX)
+- [Whisper by OpenAI](https://github.com/openai/whisper)
+- [pyannote.audio](https://github.com/pyannote/pyannote-audio)
+- [HuggingFace](https://huggingface.co/)
 
-### Getting Help
-- File issues on this repository's GitHub
-- Check [WhisperX issues](https://github.com/m-bain/whisperX/issues) for common problems
-- [pyannote discussions](https://github.com/pyannote/pyannote-audio/discussions) for diarization help
-
-### Contributing
-If you improve this pipeline or scripts, please contribute back! Pull requests welcome.
+**Getting Help:**
+- Check [WhisperX Issues](https://github.com/m-bain/whisperX/issues)
+- Check [pyannote Discussions](https://github.com/pyannote/pyannote-audio/discussions)
+- File issues on this repository
 
 ---
 
 ## License
 
-These scripts are provided as-is for the STRATO Mercata project. Modify and use as needed for your own Jekyll-based websites.
+Scripts provided as-is for STRATO Mercata project. Modify as needed.
 
 **Dependencies:**
 - WhisperX: MIT License
-- PyTorch: BSD License  
+- PyTorch: BSD License
 - pyannote.audio: MIT License
 - Whisper: MIT License
 
 ---
 
-**Last Updated:** November 2025
-**Hardware Tested:** AMD RX 7900 XTX, NVIDIA RTX 3090, NVIDIA RTX 5070 (Blackwell)
-**Software Tested:** PyTorch 2.2.0 (stable), PyTorch 2.10.0.dev (nightly), WhisperX 3.7.4
-**Test Case:** Bob Summerwill Episode (79 minutes, 6 speakers)
-**Success Rate:** 95%+ transcription accuracy, 90%+ speaker identification accuracy
+**Last Updated:** November 2025  
+**Tested Hardware:** RTX 5070, RTX 3090, RX 7900 XTX  
+**Test Case:** 79-minute audio, 6 speakers  
+**Success Rate:** 95%+ transcription, 90%+ speaker ID
