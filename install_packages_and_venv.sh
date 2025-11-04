@@ -111,7 +111,7 @@ elif command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
     HAS_NVIDIA=true
     GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo "NVIDIA GPU")
     echo -e "${GREEN}✓ Detected NVIDIA GPU: $GPU_NAME${NC}"
-    echo "Will install PyTorch nightly with CUDA 12.8 support"
+    echo "Will install PyTorch nightly with CUDA 13.0 support"
 else
     HAS_NVIDIA=false
     echo -e "${YELLOW}⚠ No NVIDIA GPU detected - using CPU mode${NC}"
@@ -172,7 +172,7 @@ if [ "$REFRESH_LOCK" = false ]; then
     echo "Using frozen dependencies for fast, reproducible installation"
     echo "This may take 2-5 minutes depending on internet speed..."
     if [ "$HAS_NVIDIA" = true ]; then
-        echo "Installing from: requirements-nvidia-lock.txt (CUDA 12.8)"
+        echo "Installing from: requirements-nvidia-lock.txt (CUDA 13.0)"
         pip install -r "$PROJECT_DIR/requirements-nvidia-lock.txt"
     else
         echo "Installing from: requirements-cpu-lock.txt (CPU-only)"
@@ -190,7 +190,7 @@ else
     echo "Will switch to stable PyTorch once it supports Blackwell (expected: PyTorch 2.6+)"
     echo "This may take 2-5 minutes depending on internet speed..."
     if [ "$HAS_NVIDIA" = true ]; then
-        echo "Installing from: requirements-nvidia.txt (CUDA 12.8)"
+        echo "Installing from: requirements-nvidia.txt (CUDA 13.0)"
         pip install -r "$PROJECT_DIR/requirements-nvidia.txt"
     else
         echo "Installing from: requirements-cpu.txt (CPU-only)"
@@ -327,7 +327,7 @@ if [ "$REFRESH_LOCK" = true ]; then
     echo -e "${YELLOW}[7.6/10] Fixing PyTorch version conflicts (refresh mode)...${NC}"
     echo "WhisperX downgraded PyTorch to 2.8.0, reinstalling 2.9.0 nightly for compatibility"
     if [ "$HAS_NVIDIA" = true ]; then
-        pip install --force-reinstall --no-deps torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
+        pip install --force-reinstall --no-deps torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu130
     else
         pip install --force-reinstall --no-deps torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu
     fi
