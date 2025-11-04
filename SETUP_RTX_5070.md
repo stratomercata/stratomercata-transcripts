@@ -36,13 +36,14 @@ This guide walks you through setting up WhisperX transcription with speaker diar
 
 - **OS:** Ubuntu 24.04 LTS (fresh install)
 - **Kernel:** Linux 6.8+
-- **Python:** 3.12 (comes with Ubuntu 24.04)
+- **Python:** 3.12 (pre-installed with Ubuntu 24.04)
+  - Note: `python3-venv`, `python3-pip`, and `python3-dev` will be installed in Step 2
 
 ---
 
 ## Step 1: Install NVIDIA Drivers
 
-The RTX 5070 requires NVIDIA driver version 565 or newer for Blackwell architecture support.
+**CRITICAL:** The RTX 5070 uses Blackwell architecture and requires NVIDIA driver version 565 or newer. Earlier driver versions will not recognize the GPU.
 
 ### 1.1 Update System Packages
 
@@ -51,19 +52,17 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-### 1.2 Install NVIDIA Driver 565+
+### 1.2 Install Latest NVIDIA Driver
 
 ```bash
-# Add the graphics drivers PPA (if needed for latest drivers)
-sudo add-apt-repository ppa:graphics-drivers/ppa -y
-sudo apt update
-
-# Install NVIDIA driver 565 or newer
-sudo apt install -y nvidia-driver-565
-
-# Alternatively, install the latest available driver
-# sudo ubuntu-drivers install
+# Automatically detect GPU and install the latest recommended driver
+sudo ubuntu-drivers install
 ```
+
+**What this does:**
+- Detects your RTX 5070 automatically
+- Installs the latest compatible driver (565 or newer)
+- No need to manually track version numbers
 
 ### 1.3 Reboot System (REQUIRED)
 
@@ -83,15 +82,17 @@ nvidia-smi
 
 **Expected output:**
 ```
-+---------------------------------------------------------------------------------------+
-| NVIDIA-SMI 565.xx.xx              Driver Version: 565.xx.xx      CUDA Version: 12.8  |
-|-----------------------------------------+----------------------+----------------------+
-| GPU  Name                 Persistence-M | Bus-Id        Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp   Perf          Pwr:Usage/Cap |         Memory-Usage | GPU-Util  Compute M. |
-|=========================================+======================+======================|
-|   0  NVIDIA GeForce RTX 5070        Off | 00000000:01:00.0  On |                  N/A |
-|  0%   42C    P8              15W / 220W |    500MiB / 12282MiB |      0%      Default |
-+---------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 5070        Off |   00000000:01:00.0  On |                  N/A |
+|  0%   39C    P0             18W /  250W |     691MiB /  12227MiB |      3%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
 ```
 
 **Critical checks:**
@@ -157,12 +158,6 @@ source venv/bin/activate
 ```
 
 Your prompt should now show `(venv)` prefix.
-
-### 3.4 Upgrade pip
-
-```bash
-pip install --upgrade pip setuptools wheel
-```
 
 ---
 
@@ -489,8 +484,8 @@ SPEAKER_01:
 
 **Solution:**
 ```bash
-# Reinstall NVIDIA driver
-sudo apt install --reinstall nvidia-driver-565
+# Reinstall NVIDIA driver (same command as Step 1.2 with --reinstall flag)
+sudo ubuntu-drivers install --reinstall
 sudo reboot
 ```
 
