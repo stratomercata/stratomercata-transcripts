@@ -26,7 +26,7 @@ sudo reboot
 - Installs system dependencies (build-essential, ffmpeg, python3-dev, git)
 - Creates Python virtual environment
 - Installs PyTorch nightly with CUDA 12.8
-- Installs all Python dependencies from requirements-lock.txt
+- Installs all Python dependencies from requirements files
 - Applies WhisperX patches automatically
 - Configures LD_LIBRARY_PATH in ~/.bashrc
 - Runs verification tests
@@ -109,10 +109,24 @@ PyTorch nightly bundles cuDNN but doesn't configure library paths. This is a nig
 
 ### Requirements Files
 
-- **requirements.txt** - 6 direct dependencies, flexible versions
-- **requirements-lock.txt** - 155+ packages with exact versions
+- **requirements-nvidia.txt** - PyTorch nightly with CUDA 12.8 for NVIDIA GPUs
+- **requirements-cpu.txt** - PyTorch nightly CPU-only for non-NVIDIA systems
+- **requirements-base.txt** - WhisperX, pyannote.audio, SpeechBrain (hardware-agnostic)
+- **requirements-nvidia-lock.txt** - Complete dependency snapshot for NVIDIA systems
 
-Generate lock file: `pip freeze > requirements-lock.txt`
+Generate NVIDIA lock file:
+```bash
+pip install -r requirements-nvidia.txt
+pip install -r requirements-base.txt
+pip freeze > requirements-nvidia-lock.txt
+```
+
+Generate CPU lock file:
+```bash
+pip install -r requirements-cpu.txt
+pip install -r requirements-base.txt
+pip freeze > requirements-cpu-lock.txt
+```
 
 ---
 

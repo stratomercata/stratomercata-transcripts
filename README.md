@@ -203,21 +203,32 @@ This installs:
 
 3. **Install remaining Python dependencies:**
 ```bash
-pip install -r requirements-lock.txt
+pip install -r requirements-base.txt
 ```
 
 **About Requirements Files:**
 
-This project uses two requirements files:
-- **requirements.txt** (minimal) - 6 direct dependencies only. For development when you need flexibility.
-- **requirements-lock.txt** (complete) - All 155+ packages with exact versions. **Use this for setup** to ensure reproducible builds.
+This project uses hardware-specific requirements files:
+- **requirements-nvidia.txt** - PyTorch nightly with CUDA 12.8 for NVIDIA GPUs
+- **requirements-cpu.txt** - PyTorch nightly CPU-only for non-NVIDIA systems
+- **requirements-base.txt** - WhisperX, pyannote.audio, SpeechBrain (hardware-agnostic)
+- **requirements-nvidia-lock.txt** - Complete dependency snapshot for NVIDIA systems
+- **requirements-cpu-lock.txt** - Complete dependency snapshot for CPU systems
 
-**Generating/Updating Lock File:**
+**Generating/Updating Lock Files:**
 
-If you need to regenerate the lock file after updating requirements.txt:
+For NVIDIA systems:
 ```bash
-pip install -r requirements.txt
-pip freeze > requirements-lock.txt
+pip install -r requirements-nvidia.txt
+pip install -r requirements-base.txt
+pip freeze > requirements-nvidia-lock.txt
+```
+
+For CPU systems:
+```bash
+pip install -r requirements-cpu.txt
+pip install -r requirements-base.txt
+pip freeze > requirements-cpu-lock.txt
 ```
 
 4. **Apply WhisperX patches (REQUIRED):**
