@@ -36,8 +36,9 @@ This guide walks you through setting up WhisperX transcription with speaker diar
 
 - **OS:** Ubuntu 24.04 LTS (fresh install)
 - **Kernel:** Linux 6.8+
-- **Python:** 3.12 (pre-installed with Ubuntu 24.04)
+- **Python:** 3.10+ (3.12 recommended, comes with Ubuntu 24.04)
   - Note: `python3-venv`, `python3-pip`, and `python3-dev` will be installed in Step 2
+  - All paths in this guide assume Python 3.12 (Ubuntu 24.04 default)
 
 ---
 

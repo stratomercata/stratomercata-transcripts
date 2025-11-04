@@ -45,7 +45,7 @@ python3 diarize_and_combine.py audio.mp3 transcript.txt
 
 ## Environment Requirements
 
-- Python 3.8+
+- Python 3.10+ (3.12 recommended)
 - CUDA-capable GPU (highly recommended)
 - Hugging Face account with accepted model agreements
 

@@ -126,8 +126,8 @@ For high-quality local transcription with speaker diarization using WhisperX on 
 **System Requirements:**
 - NVIDIA GPU (tested on RTX 5070)
 - Ubuntu 24.04+ (or compatible Linux)
-- Python 3.12+
-- CUDA 12.1 compatible setup
+- Python 3.10+ (3.12 recommended, comes with Ubuntu 24.04)
+- CUDA 12.1+ compatible setup
 - FFmpeg
 
 **🚨 IMPORTANT: For RTX 5070 / Blackwell Architecture Setup**

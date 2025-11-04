@@ -7,23 +7,24 @@
 # This is a complete lock file with ALL dependencies (direct and transitive)
 # pinned to exact versions for reproducible builds.
 #
-# IMPORTANT: Install PyTorch nightly BEFORE this file:
-# pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
-#
-# Then: pip install -r requirements.txt
+# Installation:
+#   pip install -r requirements.txt
 #
 # ==============================================================================
+
+# Add PyTorch nightly index for torch/torchvision/torchaudio
+--extra-index-url https://download.pytorch.org/whl/nightly/cu128
 
 # Build tools
 setuptools==80.9.0
 wheel==0.43.0
 
-# PyTorch ecosystem (installed separately via nightly index)
-# torch==2.10.0.dev20251103+cu128
-# torchvision==0.25.0.dev20251103+cu128
-# torchaudio==2.10.0.dev20251103+cu128
-# pytorch-triton==3.5.0+git7416ffcb
-# triton==3.4.0
+# PyTorch ecosystem (locked to specific nightly build)
+torch==2.10.0.dev20251103+cu128
+torchvision==0.25.0.dev20251103+cu128
+torchaudio==2.10.0.dev20251103+cu128
+pytorch-triton==3.5.0+git7416ffcb
+triton==3.4.0
 
 # Core transcription
 whisperx @ git+https://github.com/m-bain/whisperx.git@d32ec3e3012ec4c0934f4088424c32f3f038b249
@@ -230,10 +231,8 @@ nvidia-nvtx-cu12==12.8.90
 #
 # Quick install:
 # 1. Create venv: python3 -m venv venv && source venv/bin/activate
-# 2. Install PyTorch nightly:
-#    pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu128
-# 3. Install this file: pip install -r requirements.txt
-# 4. Apply WhisperX patches (see SETUP_RTX_5070.md Step 6)
-# 5. Set LD_LIBRARY_PATH (see SETUP_RTX_5070.md Step 7)
+# 2. Install everything: pip install -r requirements.txt
+# 3. Apply WhisperX patches (see SETUP_RTX_5070.md Step 6)
+# 4. Set LD_LIBRARY_PATH (see SETUP_RTX_5070.md Step 7)
 #
 # ==============================================================================
