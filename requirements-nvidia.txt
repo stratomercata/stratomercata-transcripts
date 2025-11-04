@@ -15,9 +15,16 @@
 #
 # ==============================================================================
 
+# CUDA 13.0 Runtime - Install FIRST to ensure PyTorch uses correct version
+# PyTorch cu130 nightly has outdated metadata and may try to pull CUDA 12 runtime
+# Explicitly installing this first forces correct CUDA 13 dependencies
+nvidia-cuda-runtime>=13.0
+
 # PyTorch nightly with CUDA 13.0
 # Works with all NVIDIA GPUs: RTX 5070/50/40/30/20 series, GTX, Tesla, etc.
 --extra-index-url https://download.pytorch.org/whl/nightly/cu130
+
+# PyTorch packages - installed after CUDA runtime to ensure compatibility
 torch --pre
 torchvision --pre
 torchaudio --pre
