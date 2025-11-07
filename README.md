@@ -97,8 +97,8 @@ source setup_env.sh
 # 1. Extract audio from video (if needed)
 ffmpeg -i "video.mp4" -q:a 0 -map a output.mp3
 
-# 2. Transcribe with speaker identification
-python3 diarize_and_combine.py output.mp3
+# 2. Transcribe with speaker identification (forces English by default)
+python3 transcribe_with_diarization.py output.mp3
 # Output: output_transcript_with_speakers.txt
 
 # 3. Map speaker labels to names
@@ -112,6 +112,24 @@ python3 format_transcript_for_markdown.py \
   output_with_names.txt \
   output_formatted.md
 ```
+
+### Language Configuration
+
+**Preventing Language Drift:**
+
+The transcription script now forces English language by default to prevent the AI from drifting into other languages during transcription. This is especially important for interviews with non-native English speakers where accents might confuse the auto-detection.
+
+```bash
+# Default: English (recommended for all English content)
+python3 transcribe_with_diarization.py output.mp3
+
+# Specify a different language if needed
+python3 transcribe_with_diarization.py output.mp3 --language de  # German
+python3 transcribe_with_diarization.py output.mp3 --language fr  # French
+python3 transcribe_with_diarization.py output.mp3 --language es  # Spanish
+```
+
+Common language codes: `en` (English), `de` (German), `fr` (French), `es` (Spanish), `it` (Italian), `pt` (Portuguese), `zh` (Chinese), `ja` (Japanese), `ko` (Korean)
 
 ### Speaker Mapping
 
