@@ -9,8 +9,8 @@ if [ $# -eq 0 ]; then
     echo "Usage: $0 <audio_file> [options]"
     echo ""
     echo "Options:"
-    echo "  --high-quality       Use high-quality transcription mode"
     echo "  --model <name>       Whisper model (large-v2, large-v3, turbo)"
+    echo "  --batch-size <n>     Batch size (default: 16 GPU, 8 CPU)"
     echo "  --provider <name>    AI provider (anthropic, openai, gemini, deepseek, ollama)"
     echo "  --openai-model <name> OpenAI model (chatgpt-4o-latest, gpt-4o, etc.)"
     echo "  --gemini-model <name> Gemini model (gemini-2.0-flash-exp, etc.)"
@@ -28,7 +28,7 @@ if [ $# -eq 0 ]; then
     echo ""
     echo "Examples:"
     echo "  # Using ChatGPT-5 (latest OpenAI model)"
-    echo "  $0 interview.mp3 --high-quality --provider openai"
+    echo "  $0 interview.mp3 --provider openai"
     echo ""
     echo "  # Using Ollama (local, FREE, private)"
     echo "  $0 interview.mp3 --provider ollama --ollama-model qwen2.5:32b"
@@ -36,25 +36,20 @@ if [ $# -eq 0 ]; then
     echo "  # Using DeepSeek (very cost-effective)"
     echo "  $0 interview.mp3 --provider deepseek"
     echo ""
-    echo "  # Fast transcription only (no correction)"
+    echo "  # Transcription only (no correction)"
     echo "  $0 interview.mp3 --skip-correction"
+    echo ""
+    echo "  # Custom batch size for speed optimization"
+    echo "  $0 interview.mp3 --batch-size 32"
     exit 1
 fi
 
 AUDIO_FILE="$1"
 shift
 
-# Auto-detect GPU and default to high quality if available
-if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-    HIGH_QUALITY="--high-quality"
-    echo "GPU detected - defaulting to HIGH QUALITY mode"
-else
-    HIGH_QUALITY=""
-    echo "No GPU detected - defaulting to standard quality mode"
-fi
-
 # Default options
 MODEL="large-v2"
+BATCH_SIZE=""
 AI_PROVIDER="openai"  # Default to OpenAI (ChatGPT-5)
 OPENAI_MODEL="chatgpt-4o-latest"
 GEMINI_MODEL="gemini-2.0-flash-exp"
@@ -65,12 +60,12 @@ SKIP_CORRECTION=false
 # Parse optional arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --high-quality)
-            HIGH_QUALITY="--high-quality"
-            shift
-            ;;
         --model)
             MODEL="$2"
+            shift 2
+            ;;
+        --batch-size)
+            BATCH_SIZE="$2"
             shift 2
             ;;
         --provider)
@@ -144,7 +139,10 @@ echo "Complete Transcription Pipeline with AI Correction"
 echo "========================================================================"
 echo "Audio file: $AUDIO_FILE"
 echo "Whisper model: $MODEL"
-echo "Quality mode: ${HIGH_QUALITY:-standard}"
+echo "Compute type: int8 (optimal quality/VRAM balance)"
+if [ -n "$BATCH_SIZE" ]; then
+    echo "Batch size: $BATCH_SIZE"
+fi
 if [ "$SKIP_CORRECTION" = false ]; then
     echo "AI provider: $AI_PROVIDER"
     if [ "$AI_PROVIDER" = "openai" ]; then
@@ -162,56 +160,43 @@ fi
 echo "========================================================================"
 echo ""
 
-# Step 1: Transcribe with WhisperX + initial prompt
-echo "STEP 1: Transcribing with WhisperX..."
+# Step 1: Transcribe with WhisperX
+echo "STEP 1: Transcribing with WhisperX (int8 quantization)..."
 echo "------------------------------------------------------------------------"
 
-python3 scripts/transcribe_with_diarization.py "$AUDIO_FILE" \
-    $HIGH_QUALITY \
-    --model "$MODEL"
+# Build command with optional batch size
+CMD="python3 scripts/transcribe_with_diarization.py \"$AUDIO_FILE\" --model \"$MODEL\""
+if [ -n "$BATCH_SIZE" ]; then
+    CMD="$CMD --batch-size $BATCH_SIZE"
+fi
+
+eval $CMD
 
 if [ $? -ne 0 ]; then
     echo "Error: Transcription failed"
     exit 1
 fi
 
-# Find the generated transcript file and move to intermediates
-# Format: filename_<model>_<quality>_transcript_with_speakers.txt
+# Find the generated transcript file in intermediates
+# New format: filename_<model>_transcript_with_speakers.txt
 BASE_NAME=$(basename "$AUDIO_FILE" | sed 's/\.[^.]*$//')
 MODEL_SHORT=$(echo "$MODEL" | sed 's/distil-/d/;s/large-/l/')
-QUALITY=$([ -n "$HIGH_QUALITY" ] && echo "hq" || echo "lq")
-TRANSCRIPT="${BASE_NAME}_${MODEL_SHORT}_${QUALITY}_transcript_with_speakers.txt"
+TRANSCRIPT="intermediates/${BASE_NAME}_${MODEL_SHORT}_transcript_with_speakers.txt"
 
-# Create intermediates directory
-mkdir -p intermediates
-
-# Look for transcript in audio file's directory
-AUDIO_DIR=$(dirname "$AUDIO_FILE")
-if [ -f "$AUDIO_DIR/$TRANSCRIPT" ]; then
-    # Move transcript and markdown to intermediates
-    mv "$AUDIO_DIR/$TRANSCRIPT" "intermediates/"
-    MD_FILE="${TRANSCRIPT/_transcript_with_speakers.txt/_transcript.md}"
-    [ -f "$AUDIO_DIR/$MD_FILE" ] && mv "$AUDIO_DIR/$MD_FILE" "intermediates/"
-    TRANSCRIPT_FULL="intermediates/$TRANSCRIPT"
-    echo "Moved transcript files to intermediates/"
-else
-    # Fall back to finding any recent transcript
-    FOUND=$(find "$AUDIO_DIR" -name "${BASE_NAME}*_transcript_with_speakers.txt" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
+# If exact match not found, find most recent transcript
+if [ ! -f "$TRANSCRIPT" ]; then
+    FOUND=$(find intermediates -name "${BASE_NAME}*_transcript_with_speakers.txt" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2)
     
     if [ -z "$FOUND" ] || [ ! -f "$FOUND" ]; then
-        echo "Error: Could not find generated transcript"
+        echo "Error: Could not find generated transcript in intermediates/"
         exit 1
     fi
     
-    # Move files to intermediates
-    mv "$FOUND" "intermediates/"
-    TRANSCRIPT_FULL="intermediates/$(basename "$FOUND")"
-    MD_FOUND="${FOUND/_transcript_with_speakers.txt/_transcript.md}"
-    [ -f "$MD_FOUND" ] && mv "$MD_FOUND" "intermediates/"
-    
-    echo "Moved transcript files to intermediates/"
-    echo "Found transcript: $TRANSCRIPT_FULL"
+    TRANSCRIPT="$FOUND"
+    echo "Found transcript: $TRANSCRIPT"
 fi
+
+TRANSCRIPT_FULL="$TRANSCRIPT"
 
 echo ""
 echo "✓ Transcription complete: $TRANSCRIPT_FULL"
