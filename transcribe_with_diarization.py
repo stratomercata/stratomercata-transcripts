@@ -14,6 +14,11 @@ import whisperx
 import torch
 from pyannote.audio import Pipeline
 
+# Configure TF32 (suppresses PyTorch 2.9 deprecation warnings)
+# Keep the old API settings - they still work, just show warnings
+torch.backends.cudnn.allow_tf32 = True
+torch.backends.cuda.matmul.allow_tf32 = True
+
 def transcribe_audio(audio_path, device, compute_type="float16", high_accuracy=False):
     """Run WhisperX transcription - hardcoded to English
     
@@ -43,27 +48,14 @@ def transcribe_audio(audio_path, device, compute_type="float16", high_accuracy=F
     audio = whisperx.load_audio(audio_path)
     
     if high_accuracy:
-        # HIGH QUALITY settings
-        if device == "cuda":
-            # GPU: Aggressive high-accuracy settings
-            batch_size = 4
-            beam_size = 10
-            best_of = 5
-        else:
-            # CPU: Conservative but improved settings
-            batch_size = 2
-            beam_size = 5
-            best_of = 3
+        # HIGH QUALITY settings - smaller batches allow more GPU memory per sample
+        # Combined with float32 compute type for maximum precision
+        batch_size = 4 if device == "cuda" else 2
         
-        temperature = 0.0  # Most conservative predictions
-        
-        print(f"Settings: batch_size={batch_size}, beam_size={beam_size}, best_of={best_of}, temperature={temperature}")
+        print(f"Settings: batch_size={batch_size} (high-accuracy mode with float32)")
         result = model.transcribe(audio, 
                                  batch_size=batch_size, 
-                                 language="en",
-                                 temperature=temperature,
-                                 beam_size=beam_size,
-                                 best_of=best_of)
+                                 language="en")
     else:
         # LOW QUALITY (FAST) settings - standard batch processing
         batch_size = 16 if device == "cuda" else 8
