@@ -11,11 +11,17 @@ import os
 import time
 import subprocess
 import tempfile
+import warnings
 from pathlib import Path
 import pandas as pd
 import whisperx
 import torch
 from pyannote.audio import Pipeline
+
+# Suppress pyannote's TF32 reproducibility warning (we re-enable TF32 ourselves)
+warnings.filterwarnings('ignore', category=UserWarning, 
+                       module='pyannote.audio.utils.reproducibility',
+                       message='.*TensorFloat-32.*')
 
 # Configure TF32 using PyTorch 2.9+ API
 # Enables TensorFloat-32 for better performance on Ampere+ GPUs (RTX 30/40/50 series)
