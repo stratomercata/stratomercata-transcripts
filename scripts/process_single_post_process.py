@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 Multi-provider AI transcript post-processor for Ethereum/blockchain content
-Supports: Claude (Anthropic), ChatGPT-5 (OpenAI), Gemini (Google), DeepSeek, and Ollama (local)
+Supports: Claude (Anthropic), ChatGPT-5 (OpenAI), Gemini (Google), DeepSeek, Moonshot, and Ollama (local)
 Uses domain context to correct technical terms and speaker names
+
+Now supports batch processing of multiple transcripts × processors internally
 """
 
 import os
@@ -102,36 +104,33 @@ def build_context_summary():
     return "\n\n".join(context_parts) if context_parts else "No additional context available."
 
 def process_with_anthropic(transcript, api_key, context):
-    """Process transcript using Anthropic Claude 3.5 Sonnet (claude-3-5-sonnet-20241022) with streaming"""
+    """Process transcript using Anthropic Claude 3.5 Sonnet with streaming"""
     try:
         import anthropic
     except ImportError:
-        print("Error: anthropic package not installed. Install with: pip install anthropic")
-        return None
+        raise ImportError("anthropic package not installed. Install with: pip install anthropic")
     
     client = anthropic.Anthropic(api_key=api_key)
     prompt = build_prompt(context, transcript)
     
-    print(f"   Transcript size: {len(transcript)} chars (may take 5-15 minutes)")
-    print(f"   Progress: ", end='', flush=True)
+    print(f"      Transcript size: {len(transcript)} chars")
+    print(f"      Processing: ", end='', flush=True)
     
-    # Use streaming for long requests (required for operations >10 minutes)
     result = ""
     chunk_count = 0
     
     with client.messages.stream(
-        model="claude-3-5-sonnet-20241022",  # Latest Claude 3.5 Sonnet
-        max_tokens=64000,  # Claude 3.5 supports up to 64K output
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=64000,
         messages=[{"role": "user", "content": prompt}]
     ) as stream:
         for text in stream.text_stream:
             result += text
             chunk_count += 1
-            # Show progress every 100 chunks
             if chunk_count % 100 == 0:
                 print(".", end='', flush=True)
     
-    print(" ✓")  # Complete the progress line
+    print(" ✓")
     return result
 
 def split_transcript_by_speakers(transcript, max_chunk_size=15000):
@@ -144,44 +143,37 @@ def split_transcript_by_speakers(transcript, max_chunk_size=15000):
     for line in lines:
         line_size = len(line)
         
-        # If adding this line would exceed max size and we have content, start new chunk
         if current_size + line_size > max_chunk_size and current_chunk:
             chunks.append('\n'.join(current_chunk))
             current_chunk = []
             current_size = 0
         
         current_chunk.append(line)
-        current_size += line_size + 1  # +1 for newline
+        current_size += line_size + 1
     
-    # Add final chunk
     if current_chunk:
         chunks.append('\n'.join(current_chunk))
     
     return chunks
 
 def process_with_openai(transcript, api_key, context):
-    """Process transcript using OpenAI GPT-4o (gpt-4o-2024-11-20)"""
-    # Hardcoded to latest dated snapshot for version-locking
+    """Process transcript using OpenAI GPT-4o"""
     model = "gpt-4o-2024-11-20"
     try:
         import openai
     except ImportError:
-        print("Error: openai package not installed. Install with: pip install openai")
-        return None
+        raise ImportError("openai package not installed. Install with: pip install openai")
     
     client = openai.OpenAI(api_key=api_key)
     
-    # ALWAYS chunk to ensure complete output - unconditional chunking prevents any truncation
-    print(f"   Transcript size: {len(transcript)} chars - using chunking for complete output")
-    print(f"   Splitting into chunks for processing...")
+    print(f"      Transcript size: {len(transcript)} chars")
+    print(f"      Chunking for complete output...")
     
     chunks = split_transcript_by_speakers(transcript, max_chunk_size=15000)
-    print(f"   Processing {len(chunks)} chunks...")
+    print(f"      Processing {len(chunks)} chunks: ", end='', flush=True)
     
     corrected_chunks = []
     for i, chunk in enumerate(chunks, 1):
-        print(f"   Processing chunk {i}/{len(chunks)}...", end=' ', flush=True)
-        
         prompt = build_prompt(context, chunk)
         response = client.chat.completions.create(
             model=model,
@@ -193,55 +185,49 @@ def process_with_openai(transcript, api_key, context):
         )
         
         corrected_chunks.append(response.choices[0].message.content)
-        print("✓")
+        print(".", end='', flush=True)
     
-    # Combine chunks
+    print(" ✓")
     return '\n\n'.join(corrected_chunks)
 
 def process_with_gemini(transcript, api_key, context):
     """Process transcript using Google Gemini 2.5 Pro"""
-    # Hardcoded latest and best model
     model = "gemini-2.5-pro"
     try:
         import google.generativeai as genai
     except ImportError:
-        print("Error: google-generativeai package not installed. Install with: pip install google-generativeai")
-        return None
+        raise ImportError("google-generativeai package not installed")
     
     genai.configure(api_key=api_key)
     prompt = build_prompt(context, transcript)
     
+    print(f"      Transcript size: {len(transcript)} chars")
+    print(f"      Processing: ", end='', flush=True)
+    
     model_instance = genai.GenerativeModel(model)
     response = model_instance.generate_content(prompt)
     
+    print("✓")
     return response.text
 
 def process_with_deepseek(transcript, api_key, context):
-    """Process transcript using DeepSeek Chat with chunking (same strategy as OpenAI)"""
-    # Hardcoded best model
+    """Process transcript using DeepSeek Chat"""
     model = "deepseek-chat"
     try:
         import openai
     except ImportError:
-        print("Error: openai package not installed. Install with: pip install openai")
-        return None
+        raise ImportError("openai package not installed")
     
-    client = openai.OpenAI(
-        api_key=api_key,
-        base_url="https://api.deepseek.com"
-    )
+    client = openai.OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
     
-    # Use chunking like OpenAI (same API architecture and token limits)
-    print(f"   Transcript size: {len(transcript)} chars - using chunking for complete output")
-    print(f"   Splitting into chunks for processing...")
+    print(f"      Transcript size: {len(transcript)} chars")
+    print(f"      Chunking for complete output...")
     
     chunks = split_transcript_by_speakers(transcript, max_chunk_size=15000)
-    print(f"   Processing {len(chunks)} chunks...")
+    print(f"      Processing {len(chunks)} chunks: ", end='', flush=True)
     
     corrected_chunks = []
     for i, chunk in enumerate(chunks, 1):
-        print(f"   Processing chunk {i}/{len(chunks)}...", end=' ', flush=True)
-        
         prompt = build_prompt(context, chunk)
         response = client.chat.completions.create(
             model=model,
@@ -249,32 +235,28 @@ def process_with_deepseek(transcript, api_key, context):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=8192  # DeepSeek maximum is 8192
+            max_tokens=8192
         )
         
         corrected_chunks.append(response.choices[0].message.content)
-        print("✓")
+        print(".", end='', flush=True)
     
-    # Combine chunks
+    print(" ✓")
     return '\n\n'.join(corrected_chunks)
 
 def process_with_moonshot(transcript, api_key, context):
-    """Process transcript using Moonshot Kimi K2-Instruct (256K context, no chunking needed)"""
-    # Hardcoded best model - kimi-k2-instruct has 256K context window
+    """Process transcript using Moonshot Kimi K2-Instruct"""
     model = "kimi-k2-instruct"
     try:
         import openai
     except ImportError:
-        print("Error: openai package not installed. Install with: pip install openai")
-        return None
+        raise ImportError("openai package not installed")
     
-    client = openai.OpenAI(
-        api_key=api_key,
-        base_url="https://api.moonshot.cn/v1"
-    )
-    
-    # No chunking needed - 256K context handles full transcripts easily
+    client = openai.OpenAI(api_key=api_key, base_url="https://api.moonshot.cn/v1")
     prompt = build_prompt(context, transcript)
+    
+    print(f"      Transcript size: {len(transcript)} chars")
+    print(f"      Processing: ", end='', flush=True)
     
     response = client.chat.completions.create(
         model=model,
@@ -282,83 +264,71 @@ def process_with_moonshot(transcript, api_key, context):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=16384  # Standard for OpenAI-compatible APIs
+        max_tokens=16384
     )
     
+    print("✓")
     return response.choices[0].message.content
 
-def process_with_ollama(transcript, context):
-    """Process transcript using local Ollama with qwen2.5:32b (auto-managed service)"""
+def process_with_ollama(transcript, context, ollama_process=None):
+    """Process transcript using local Ollama - reuses existing process if provided"""
     import subprocess
     import time
-    import signal
     
     try:
         import requests
     except ImportError:
-        print("Error: requests package not installed. Install with: pip install requests")
-        return None
+        raise ImportError("requests package not installed")
     
-    # Hardcoded best model for technical content
     model = "qwen2.5:32b"
-    ollama_process = None
+    started_ollama = False
     
     try:
-        # Check if Ollama is already running
-        print("   Checking Ollama service...")
-        try:
-            response = requests.get("http://localhost:11434/api/tags", timeout=2)
-            ollama_was_running = response.status_code == 200
-            if ollama_was_running:
-                print("   ✓ Ollama already running")
-        except requests.exceptions.ConnectionError:
-            ollama_was_running = False
-            print("   Starting Ollama service...")
-            # Start Ollama serve in background
-            ollama_process = subprocess.Popen(
-                ['ollama', 'serve'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
-            )
-            # Wait for service to be ready
-            for i in range(10):
-                time.sleep(1)
-                try:
-                    requests.get("http://localhost:11434/api/tags", timeout=1)
-                    print("   ✓ Ollama service started")
-                    break
-                except:
-                    continue
-            else:
-                print("   Error: Ollama service failed to start")
-                if ollama_process:
-                    ollama_process.terminate()
-                return None
+        # Check if Ollama is running (either passed in or already running)
+        if ollama_process is None:
+            try:
+                response = requests.get("http://localhost:11434/api/tags", timeout=2)
+                if response.status_code != 200:
+                    raise Exception("Ollama not responding")
+            except:
+                print("      Starting Ollama service...")
+                ollama_process = subprocess.Popen(
+                    ['ollama', 'serve'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                started_ollama = True
+                
+                # Wait for service
+                for i in range(10):
+                    time.sleep(1)
+                    try:
+                        requests.get("http://localhost:11434/api/tags", timeout=1)
+                        print("      ✓ Ollama started")
+                        break
+                    except:
+                        continue
+                else:
+                    raise Exception("Ollama failed to start")
         
         # Process transcript
         prompt = build_prompt(context, transcript)
-        print(f"   Processing with {model}...")
-        print(f"   Transcript size: {len(transcript)} chars (may take 10-30 minutes)")
-        print(f"   Progress: ", end='', flush=True)
+        print(f"      Transcript size: {len(transcript)} chars")
+        print(f"      Processing: ", end='', flush=True)
         
-        # Use streaming to show progress
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
                 "model": model,
                 "prompt": prompt,
-                "stream": True,  # Enable streaming for progress
-                "options": {
-                    "temperature": 0.3,
-                    "num_predict": 16000
-                }
+                "stream": True,
+                "options": {"temperature": 0.3, "num_predict": 16000}
             },
-            timeout=1800,  # 30 minutes for large transcripts
+            timeout=1800,
             stream=True
         )
         response.raise_for_status()
         
-        # Collect response and show progress
         result = ""
         chunk_count = 0
         for line in response.iter_lines():
@@ -367,233 +337,230 @@ def process_with_ollama(transcript, context):
                 if "response" in chunk:
                     result += chunk["response"]
                     chunk_count += 1
-                    # Show progress every 50 chunks
                     if chunk_count % 50 == 0:
                         print(".", end='', flush=True)
                 if chunk.get("done", False):
                     break
         
-        print(" ✓")  # Complete the progress line
-        return result
+        print(" ✓")
+        return result, ollama_process if started_ollama else None
         
-    except requests.exceptions.Timeout:
-        print("   Error: Ollama request timed out")
-        return None
     except Exception as e:
-        print(f"   Error: {e}")
-        return None
-    finally:
-        # Stop Ollama if we started it
-        if not ollama_was_running and ollama_process:
-            print("   Stopping Ollama service...")
+        print(f" ✗ Error: {e}")
+        if started_ollama and ollama_process:
             ollama_process.terminate()
-            try:
-                ollama_process.wait(timeout=5)
-                print("   ✓ Ollama service stopped")
-            except subprocess.TimeoutExpired:
-                ollama_process.kill()
-                print("   ✓ Ollama service force stopped")
+        return None, None
 
-def process_transcript(transcript_path, api_key, provider="anthropic"):
-    """Main processing function"""
-    
-    print("="*60)
-    print("Transcript Post-Processor")
-    print("="*60)
-    print(f"Input: {transcript_path}")
-    print(f"Provider: {provider}")
-    
-    if provider == "openai":
-        print(f"Model: gpt-4o-2024-11-20 (hardcoded)")
-    elif provider == "gemini":
-        print(f"Model: gemini-2.5-pro (hardcoded)")
-    elif provider == "deepseek":
-        print(f"Model: deepseek-chat (hardcoded)")
-    elif provider == "moonshot":
-        print(f"Model: kimi-k2-instruct (hardcoded)")
-    elif provider == "ollama":
-        print(f"Model: qwen2.5:32b (hardcoded)")
-    elif provider == "anthropic":
-        print(f"Model: claude-3-5-sonnet-20241022 (hardcoded)")
-    
+def process_single_combination(transcript_path, provider, api_keys, context, ollama_process=None):
+    """Process a single transcript with a single provider"""
     # Load transcript
-    print("\n1. Loading transcript...")
-    transcript_file = Path(transcript_path)
-    if not transcript_file.exists():
-        print(f"Error: Transcript file not found: {transcript_path}")
-        return None
-    
-    with open(transcript_file, 'r', encoding='utf-8') as f:
+    with open(transcript_path, 'r', encoding='utf-8') as f:
         transcript = f.read()
     
-    print(f"   Loaded {len(transcript)} characters")
+    # Process with appropriate provider
+    corrected = None
+    new_ollama_process = None
     
-    # Build context
-    print("\n2. Building context from glossary...")
-    context = build_context_summary()
-    print(f"   Context built: {len(context)} characters")
-    
-    # Process with AI
-    print(f"\n3. Processing with {provider}...")
-    
-    if provider == "anthropic":
-        corrected = process_with_anthropic(transcript, api_key, context)
-    elif provider == "openai":
-        corrected = process_with_openai(transcript, api_key, context)
-    elif provider == "gemini":
-        corrected = process_with_gemini(transcript, api_key, context)
-    elif provider == "deepseek":
-        corrected = process_with_deepseek(transcript, api_key, context)
-    elif provider == "moonshot":
-        corrected = process_with_moonshot(transcript, api_key, context)
-    elif provider == "ollama":
-        corrected = process_with_ollama(transcript, context)
-    else:
-        print(f"Error: Unknown provider: {provider}")
-        return None
+    try:
+        if provider == "anthropic":
+            corrected = process_with_anthropic(transcript, api_keys['anthropic'], context)
+        elif provider == "openai":
+            corrected = process_with_openai(transcript, api_keys['openai'], context)
+        elif provider == "gemini":
+            corrected = process_with_gemini(transcript, api_keys['gemini'], context)
+        elif provider == "deepseek":
+            corrected = process_with_deepseek(transcript, api_keys['deepseek'], context)
+        elif provider == "moonshot":
+            corrected = process_with_moonshot(transcript, api_keys['moonshot'], context)
+        elif provider == "ollama":
+            corrected, new_ollama_process = process_with_ollama(transcript, context, ollama_process)
+    except Exception as e:
+        print(f"      ✗ Processing failed: {e}")
+        return None, new_ollama_process
     
     if not corrected:
-        print("Error: Processing failed")
-        return None
+        return None, new_ollama_process
     
-    print("   ✓ Processing complete")
-    
-    # Strip trailing whitespace from each line
+    # Clean up
     corrected_lines = [line.rstrip() for line in corrected.split('\n')]
     corrected_clean = '\n'.join(corrected_lines)
     
-    # Save corrected transcript to outputs directory
+    # Save output
+    transcript_file = Path(transcript_path)
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
     
-    # Extract transcriber from filename (whisperx, assemblyai, deepgram, openai)
-    # Expected formats:
-    #   - filename_whisperx_transcript_with_speakers.txt
-    #   - filename_assemblyai_transcript_with_speakers.txt
-    #   - filename_deepgram_transcript_with_speakers.txt
-    #   - filename_openai_transcript_with_speakers.txt
-    transcriber = "whisperx"  # default fallback
+    # Extract transcriber from filename
+    transcriber = "whisperx"
     base_name = transcript_file.stem
     
-    # Check for transcriber suffixes before _transcript_with_speakers
     for service in ['whisperx', 'assemblyai', 'deepgram', 'openai']:
         if f'_{service}_transcript_with_speakers' in base_name:
             transcriber = service
             base_name = base_name.replace(f'_{service}_transcript_with_speakers', '')
             break
     
-    # Remove any model version indicators
+    # Clean base name
     base_name = base_name.replace('_lv2', '').replace('_lv3', '').replace('_dlv3', '')
     base_name = base_name.replace('_lq', '').replace('_hq', '')
     
-    # Build output filename: base_transcriber_processor_corrected.txt
-    # Example: alex-interview_deepgram_moonshot_corrected.txt
+    # Build output path
     output_path = output_dir / f"{base_name}_{transcriber}_{provider}_corrected.txt"
     
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(corrected_clean)
     
-    print(f"\n4. Saved corrected transcript to: {output_path}")
-    
-    # Also save markdown version
+    # Save markdown
     md_output_path = output_path.with_suffix('.md')
     md_content = corrected_clean.replace('\n\nSPEAKER_', '\n\n**SPEAKER_')
     md_content = md_content.replace(':\n', ':**\n')
     with open(md_output_path, 'w', encoding='utf-8') as f:
         f.write(md_content)
     
-    print(f"   Also saved markdown to: {md_output_path}")
+    print(f"      ✓ Saved: {output_path}")
     
-    print("\n" + "="*60)
-    print("✓ Post-processing complete!")
-    print("="*60)
-    
-    return output_path
+    return output_path, new_ollama_process
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Post-process transcripts using AI to correct technical terms and speaker names",
-        epilog="""
-Examples:
-  # Using Anthropic Claude 3.5 Sonnet (best quality)
-  python3 post_process_transcript.py transcript.txt --provider anthropic
-  
-  # Using OpenAI GPT-4o (gpt-4o-2024-11-20)
-  python3 post_process_transcript.py transcript.txt --provider openai
-  
-  # Using Google Gemini 1.5 Pro (best reasoning)
-  python3 post_process_transcript.py transcript.txt --provider gemini
-  
-  # Using DeepSeek Chat (very cost-effective)
-  python3 post_process_transcript.py transcript.txt --provider deepseek
-  
-  # Using Moonshot Kimi v2 (Chinese, 128K context)
-  python3 post_process_transcript.py transcript.txt --provider moonshot
-  
-  # Using Ollama qwen2.5:32b (local, FREE, private - auto-managed)
-  python3 post_process_transcript.py transcript.txt --provider ollama
-  
-  # With environment variables (provider auto-selects best model)
-  export OPENAI_API_KEY=sk-...
-  python3 post_process_transcript.py transcript.txt --provider openai
-        """,
+        description="Post-process transcripts with multiple AI providers",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
-    parser.add_argument("transcript", help="Path to transcript file")
-    parser.add_argument("--api-key", help="API key (not needed for Ollama)")
-    parser.add_argument("--provider", 
-                       choices=["anthropic", "openai", "gemini", "deepseek", "moonshot", "ollama"], 
-                       default="anthropic",
-                       help="AI provider (default: anthropic). Each provider uses its best model.")
+    parser.add_argument("transcripts", nargs='+', help="Transcript file path(s)")
+    parser.add_argument("--processors", required=True,
+                       help="Comma-separated list of processors (anthropic,openai,gemini,deepseek,moonshot,ollama)")
     
     args = parser.parse_args()
     
-    # Get API key (not needed for Ollama)
-    api_key = None
+    # Parse processors
+    processors = [p.strip() for p in args.processors.split(',')]
+    valid_processors = {'anthropic', 'openai', 'gemini', 'deepseek', 'moonshot', 'ollama'}
     
-    if args.provider == "anthropic":
-        api_key = args.api_key or os.environ.get('ANTHROPIC_API_KEY')
-        if not api_key:
-            print("Error: Anthropic API key required")
-            print("Set ANTHROPIC_API_KEY or use --api-key")
+    for proc in processors:
+        if proc not in valid_processors:
+            print(f"Error: Unknown processor '{proc}'")
+            print(f"Valid options: {', '.join(sorted(valid_processors))}")
             sys.exit(1)
-    elif args.provider == "openai":
-        api_key = args.api_key or os.environ.get('OPENAI_API_KEY')
-        if not api_key:
-            print("Error: OpenAI API key required")
-            print("Set OPENAI_API_KEY or use --api-key")
-            sys.exit(1)
-    elif args.provider == "gemini":
-        api_key = args.api_key or os.environ.get('GOOGLE_API_KEY')
-        if not api_key:
-            print("Error: Google API key required")
-            print("Set GOOGLE_API_KEY or use --api-key")
-            print("Get key: https://makersuite.google.com/app/apikey")
-            sys.exit(1)
-    elif args.provider == "deepseek":
-        api_key = args.api_key or os.environ.get('DEEPSEEK_API_KEY')
-        if not api_key:
-            print("Error: DeepSeek API key required")
-            print("Set DEEPSEEK_API_KEY or use --api-key")
-            print("Get key: https://platform.deepseek.com/")
-            sys.exit(1)
-    elif args.provider == "moonshot":
-        api_key = args.api_key or os.environ.get('MOONSHOT_API_KEY')
-        if not api_key:
-            print("Error: Moonshot API key required")
-            print("Set MOONSHOT_API_KEY or use --api-key")
-            print("Get key: https://platform.moonshot.cn/")
-            sys.exit(1)
-    elif args.provider == "ollama":
-        print("Using local Ollama - no API key required")
     
-    # Process transcript
-    result = process_transcript(
-        args.transcript, api_key, args.provider
-    )
+    # Check API keys
+    api_keys = {}
+    skip_processors = []
     
-    sys.exit(0 if result else 1)
+    for proc in processors:
+        if proc == "anthropic":
+            key = os.environ.get('ANTHROPIC_API_KEY')
+            if not key:
+                print(f"⊘ Skipping {proc}: ANTHROPIC_API_KEY not set")
+                skip_processors.append(proc)
+            else:
+                api_keys['anthropic'] = key
+        elif proc == "openai":
+            key = os.environ.get('OPENAI_API_KEY')
+            if not key:
+                print(f"⊘ Skipping {proc}: OPENAI_API_KEY not set")
+                skip_processors.append(proc)
+            else:
+                api_keys['openai'] = key
+        elif proc == "gemini":
+            key = os.environ.get('GOOGLE_API_KEY')
+            if not key:
+                print(f"⊘ Skipping {proc}: GOOGLE_API_KEY not set")
+                skip_processors.append(proc)
+            else:
+                api_keys['gemini'] = key
+        elif proc == "deepseek":
+            key = os.environ.get('DEEPSEEK_API_KEY')
+            if not key:
+                print(f"⊘ Skipping {proc}: DEEPSEEK_API_KEY not set")
+                skip_processors.append(proc)
+            else:
+                api_keys['deepseek'] = key
+        elif proc == "moonshot":
+            key = os.environ.get('MOONSHOT_API_KEY')
+            if not key:
+                print(f"⊘ Skipping {proc}: MOONSHOT_API_KEY not set")
+                skip_processors.append(proc)
+            else:
+                api_keys['moonshot'] = key
+    
+    # Remove skipped processors
+    processors = [p for p in processors if p not in skip_processors]
+    
+    if not processors:
+        print("\nError: No processors available (all API keys missing)")
+        sys.exit(1)
+    
+    # Build context once
+    print("\nBuilding context from glossary...")
+    context = build_context_summary()
+    print(f"✓ Context built: {len(context)} characters")
+    print()
+    
+    # Process all combinations
+    total = len(args.transcripts) * len(processors)
+    success_count = 0
+    failed_count = 0
+    combo_num = 0
+    
+    print("="*70)
+    print(f"Processing {len(args.transcripts)} transcript(s) × {len(processors)} processor(s) = {total} combinations")
+    print("="*70)
+    print()
+    
+    ollama_process = None
+    
+    try:
+        for transcript_path in args.transcripts:
+            if not Path(transcript_path).exists():
+                print(f"✗ Transcript not found: {transcript_path}")
+                failed_count += len(processors)
+                continue
+            
+            for processor in processors:
+                combo_num += 1
+                print(f"[{combo_num}/{total}] {Path(transcript_path).name} + {processor}")
+                
+                result, new_ollama_process = process_single_combination(
+                    transcript_path, processor, api_keys, context, ollama_process
+                )
+                
+                # Update Ollama process reference if it was started
+                if new_ollama_process:
+                    ollama_process = new_ollama_process
+                
+                if result:
+                    success_count += 1
+                else:
+                    failed_count += 1
+                
+                print()
+    
+    finally:
+        # Clean up Ollama if we started it
+        if ollama_process:
+            print("Stopping Ollama service...")
+            ollama_process.terminate()
+            try:
+                ollama_process.wait(timeout=5)
+                print("✓ Ollama stopped")
+            except:
+                ollama_process.kill()
+                print("✓ Ollama force stopped")
+    
+    # Summary
+    print("="*70)
+    print("✓ Post-Processing Complete")
+    print("="*70)
+    print(f"Total combinations: {total}")
+    print(f"Successful: {success_count}")
+    print(f"Failed: {failed_count}")
+    print(f"Skipped: {len(skip_processors) * len(args.transcripts)}")
+    print()
+    print("Output files in: ./outputs/")
+    print("="*70)
+    
+    sys.exit(0 if failed_count == 0 else 1)
 
 if __name__ == "__main__":
     main()
