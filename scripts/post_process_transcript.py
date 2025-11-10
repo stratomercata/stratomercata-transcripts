@@ -185,9 +185,9 @@ def process_with_openai(transcript, api_key, context):
     return '\n\n'.join(corrected_chunks)
 
 def process_with_gemini(transcript, api_key, context):
-    """Process transcript using Google Gemini 1.5 Pro"""
-    # Hardcoded best model for technical content
-    model = "gemini-1.5-pro"
+    """Process transcript using Google Gemini 2.5 Flash"""
+    # Hardcoded best model for technical content (2.5 Flash - best price/performance)
+    model = "gemini-2.5-flash"
     try:
         import google.generativeai as genai
     except ImportError:
@@ -348,7 +348,7 @@ def process_transcript(transcript_path, api_key, provider="anthropic"):
     if provider == "openai":
         print(f"Model: chatgpt-4o-latest (hardcoded)")
     elif provider == "gemini":
-        print(f"Model: gemini-1.5-pro (hardcoded)")
+        print(f"Model: gemini-2.5-flash (hardcoded)")
     elif provider == "deepseek":
         print(f"Model: deepseek-chat (hardcoded)")
     elif provider == "ollama":

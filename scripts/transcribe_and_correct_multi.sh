@@ -96,7 +96,7 @@ for PROVIDER in "${PROVIDER_ARRAY[@]}"; do
             echo "  - OpenAI: chatgpt-4o-latest"
             ;;
         gemini)
-            echo "  - Gemini: gemini-1.5-pro"
+            echo "  - Gemini: gemini-2.5-flash"
             ;;
         ollama)
             echo "  - Ollama: qwen2.5:32b (auto-managed)"
