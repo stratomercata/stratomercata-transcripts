@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Unified transcription script with speaker diarization
-Supports multiple providers: WhisperX (local), Deepgram, AssemblyAI, OpenAI
+Supports multiple providers: WhisperX (local), Deepgram, AssemblyAI
+All providers include speaker diarization support.
 """
 
 import sys
@@ -150,7 +151,7 @@ def main():
     parser.add_argument(
         "--transcribers",
         required=True,
-        help="Comma-separated list of transcription services (whisperx,deepgram,assemblyai,openai)"
+        help="Comma-separated list of transcription services (whisperx,deepgram,assemblyai)"
     )
     parser.add_argument("--output-dir", default="intermediates", help="Output directory")
     parser.add_argument("--force-cpu", action="store_true", help="Force CPU for WhisperX")
@@ -165,7 +166,7 @@ def main():
     
     # Parse transcribers
     transcribers = [t.strip() for t in args.transcribers.split(',')]
-    valid_transcribers = {'whisperx', 'deepgram', 'assemblyai', 'openai'}
+    valid_transcribers = {'whisperx', 'deepgram', 'assemblyai'}
     
     for transcriber in transcribers:
         if transcriber not in valid_transcribers:
@@ -199,8 +200,6 @@ def main():
             _, skip_reason = validate_api_key('DEEPGRAM_API_KEY')
         elif transcriber == 'assemblyai':
             _, skip_reason = validate_api_key('ASSEMBLYAI_API_KEY')
-        elif transcriber == 'openai':
-            _, skip_reason = validate_api_key('OPENAI_API_KEY')
         elif transcriber == 'whisperx':
             _, skip_reason = validate_api_key('HF_TOKEN')
         
@@ -222,8 +221,6 @@ def main():
                 output_path = transcribe_deepgram(str(audio_path), args.output_dir)
             elif transcriber == 'assemblyai':
                 output_path = transcribe_assemblyai(str(audio_path), args.output_dir)
-            elif transcriber == 'openai':
-                output_path = transcribe_openai(str(audio_path), args.output_dir)
             
             elapsed = time.time() - transcriber_start
             results.append((transcriber, output_path, 'success', elapsed))
@@ -536,111 +533,6 @@ def transcribe_assemblyai(audio_path, output_dir):
     # Save using utility function
     formatted_text = '\n'.join(formatted_lines)
     return save_raw_transcript_from_text(output_dir, audio_file_path.stem, "assemblyai", formatted_text)
-
-
-def transcribe_openai(audio_path, output_dir):
-    """OpenAI cloud transcription (no native diarization)"""
-    import subprocess
-    from openai import OpenAI
-    
-    api_key = os.environ.get('OPENAI_API_KEY')
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable not set")
-    
-    client = OpenAI(api_key=api_key)
-    audio_file_path = Path(audio_path)
-    
-    print(f"  Model: gpt-4o-transcribe")
-    
-    # Get audio duration
-    try:
-        result = subprocess.run([
-            'ffprobe', '-v', 'error', '-show_entries', 'format=duration',
-            '-of', 'default=noprint_wrappers=1:nokey=1', str(audio_file_path)
-        ], capture_output=True, text=True, check=True)
-        total_duration = float(result.stdout.strip())
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        raise RuntimeError("Could not determine audio duration. Install ffmpeg.")
-    
-    print(f"  Duration: {total_duration / 60:.1f} minutes")
-    print(f"  Splitting into 15-minute chunks...")
-    
-    # Calculate chunks
-    chunk_duration = 900
-    overlap = 10
-    chunks = []
-    
-    chunk_num = 0
-    start_time = 0.0
-    
-    while start_time < total_duration:
-        end_time = min(start_time + chunk_duration, total_duration)
-        chunks.append((chunk_num, start_time, end_time))
-        chunk_num += 1
-        start_time = end_time - overlap if end_time < total_duration else total_duration
-    
-    print(f"  Processing {len(chunks)} chunks...")
-    
-    # Create temp directory
-    temp_dir = Path(output_dir) / "temp_chunks"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Process chunks
-    all_transcripts = []
-    
-    for chunk_num, start, end in chunks:
-        chunk_file = temp_dir / f"chunk_{chunk_num:03d}.mp3"
-        
-        print(f"    [{chunk_num + 1}/{len(chunks)}] {start/60:.1f}-{end/60:.1f}min", end=" ")
-        
-        # Extract chunk
-        subprocess.run([
-            'ffmpeg', '-i', str(audio_file_path),
-            '-ss', str(start), '-t', str(end - start),
-            '-c', 'copy', '-y', str(chunk_file)
-        ], capture_output=True, check=True)
-        
-        # Transcribe
-        try:
-            with open(chunk_file, 'rb') as audio_file:
-                transcript = client.audio.transcriptions.create(
-                    model="gpt-4o-transcribe",
-                    file=audio_file,
-                    response_format="json",
-                    timestamp_granularities=["segment"]
-                )
-            
-            chunk_lines = []
-            if hasattr(transcript, 'segments') and transcript.segments:
-                for segment in transcript.segments:
-                    absolute_time = start + segment.get('start', 0)
-                    text = segment.get('text', '').strip()
-                    chunk_lines.append(f"[{absolute_time:.1f}s] SPEAKER_00: {text}")
-            else:
-                text = transcript.text if hasattr(transcript, 'text') else str(transcript)
-                chunk_lines.append(f"[{start:.1f}s] SPEAKER_00: {text}")
-            
-            all_transcripts.append('\n'.join(chunk_lines))
-            print("✓")
-            
-        except Exception as e:
-            print(f"✗ {e}")
-            all_transcripts.append(f"[{start:.1f}s] SPEAKER_00: [Error]")
-        
-        # Cleanup
-        chunk_file.unlink(missing_ok=True)
-    
-    # Cleanup temp directory
-    try:
-        temp_dir.rmdir()
-    except:
-        pass
-    
-    print(f"  Complete ({len(chunks)} chunks stitched)")
-    
-    # Save using utility function
-    formatted = '\n~~~~~~\n'.join(all_transcripts)
-    return save_raw_transcript_from_text(output_dir, audio_file_path.stem, "openai", formatted)
 
 
 if __name__ == "__main__":
