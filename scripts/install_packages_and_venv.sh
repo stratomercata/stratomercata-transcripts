@@ -219,39 +219,47 @@ echo ""
 source "$VENV_DIR/bin/activate"
 
 # ==============================================================================
-# Step 4: WhisperX Installation
+# Step 4: Install Base Packages
 # ==============================================================================
-# Installs WhisperX and its base dependencies.
-# WhisperX pulls in PyTorch 2.8.0 as its dependency.
-# We install the optimal PyTorch version for this GPU in the next step.
+# Installs WhisperX, AI provider SDKs, and dependencies from requirements-base.txt.
+# WhisperX will pull PyTorch 2.8.0, which we'll upgrade in the next step.
+# Includes transcription services (AssemblyAI, Deepgram, OpenAI, Kimi-Audio)
+# and post-processing services (Anthropic, Google Gemini, OpenAI).
 # ==============================================================================
-echo -e "${YELLOW}[4/14] Installing WhisperX and base packages...${NC}"
-echo "Installing WhisperX and dependencies from requirements-base.txt"
-echo "Note: WhisperX includes PyTorch 2.8.0 (we install 2.9.0 next for GPU optimization)"
+echo -e "${YELLOW}[4/14] Installing base packages...${NC}"
+echo "Installing WhisperX, AI provider SDKs, and dependencies from requirements-base.txt"
+echo "Note: WhisperX will pull PyTorch 2.8.0 (we'll upgrade to 2.9.0 next)"
 echo "This may take 5-10 minutes..."
 pip install -r "$PROJECT_DIR/requirements-base.txt"
-echo -e "${GREEN}✓ WhisperX and base packages installed${NC}"
+echo -e "${GREEN}✓ Base packages installed${NC}"
 echo ""
 
 # ==============================================================================
-# Step 5: PyTorch Installation
+# Step 5: PyTorch Upgrade
 # ==============================================================================
-# Installs PyTorch 2.9.0 with CUDA 13.0 for optimal GPU performance.
+# Upgrades PyTorch from 2.8.0 (WhisperX default) to 2.9.0 with correct build.
 # PyTorch 2.9.0 provides full Blackwell (sm_120) support for RTX 50-series GPUs.
 # CUDA 13.0 offers the latest optimizations and performance improvements.
+# Uses --force-reinstall to ensure correct CUDA/CPU variant is installed.
 # ==============================================================================
-echo -e "${YELLOW}[5/14] Installing PyTorch 2.9.0...${NC}"
-echo "Installing PyTorch 2.9.0 stable with CUDA 13.0"
+echo -e "${YELLOW}[5/14] Upgrading PyTorch to latest...${NC}"
+echo "Upgrading PyTorch 2.8.0 → latest with correct build for detected hardware"
 echo "Provides full Blackwell (sm_120) support for RTX 50-series GPUs"
 echo "This may take 2-5 minutes depending on internet speed..."
 if [ "$HAS_NVIDIA" = true ]; then
-    echo "Installing from: requirements-nvidia.txt (PyTorch 2.9.0 + CUDA 13.0)"
-    pip install --force-reinstall -r "$PROJECT_DIR/requirements-nvidia.txt"
+    echo "Installing: PyTorch latest with CUDA 13.0 support"
+    pip install --force-reinstall --index-url https://download.pytorch.org/whl/cu130 \
+        torch \
+        torchvision \
+        torchaudio
 else
-    echo "Installing from: requirements-cpu.txt (PyTorch 2.9.0 CPU-only)"
-    pip install --force-reinstall -r "$PROJECT_DIR/requirements-cpu.txt"
+    echo "Installing: PyTorch latest CPU-only build"
+    pip install --force-reinstall --index-url https://download.pytorch.org/whl/cpu \
+        torch \
+        torchvision \
+        torchaudio
 fi
-echo -e "${GREEN}✓ PyTorch 2.9.0 installed${NC}"
+echo -e "${GREEN}✓ PyTorch latest installed${NC}"
 echo ""
 
 # ==============================================================================
@@ -481,33 +489,29 @@ echo -e "${GREEN}✓ All packages verified and ready to use${NC}"
 echo ""
 
 # ==============================================================================
-# Step 12: AI Provider SDKs Installation
+# Step 12: Verify AI Provider SDKs
 # ==============================================================================
-# Installs Python SDKs for cloud AI transcription and post-processing services.
-# Transcription: AssemblyAI, Deepgram, OpenAI Whisper API
-# Post-processing: Anthropic Claude, Google Gemini, OpenAI GPT, DeepSeek
-# Also includes requests library for HTTP operations.
+# Verifies that AI provider SDKs were installed from requirements-base.txt.
+# These packages were already installed in Step 4 along with WhisperX.
 # ==============================================================================
-echo -e "${YELLOW}[12/14] Installing AI provider SDKs...${NC}"
-echo "Installing Python packages for AI transcription and post-processing services:"
-echo "  Transcription providers:"
-echo "    - assemblyai: AssemblyAI cloud transcription with diarization"
-echo "    - deepgram-sdk: Deepgram cloud transcription (fastest, cheapest)"
-echo "    - openai: OpenAI Whisper API transcription"
-echo "  Post-processing providers:"
-echo "    - anthropic: Claude 3.5 Sonnet for transcript correction"
-echo "    - google-generativeai: Gemini 2.5 Pro for transcript correction"
-echo "    - openai: GPT-4o for transcript correction (reused from above)"
-echo "  Utilities:"
-echo "    - requests: HTTP client for API operations"
-pip install \
-  anthropic \
-  assemblyai \
-  deepgram-sdk \
-  google-generativeai \
-  openai \
-  requests
-echo -e "${GREEN}✓ AI provider SDKs installed${NC}"
+echo -e "${YELLOW}[12/14] Verifying AI provider SDKs...${NC}"
+echo "Verifying packages installed from requirements-base.txt:"
+echo "  Cloud transcription: assemblyai, deepgram-sdk, openai"
+echo "  Kimi-Audio support: transformers, librosa"
+echo "  AI post-processing: anthropic, google-generativeai"
+echo "  Utilities: requests"
+
+# Test key imports
+python3 -c "import assemblyai; print('✓ assemblyai')"
+python3 -c "import deepgram; print('✓ deepgram-sdk')"
+python3 -c "import openai; print('✓ openai')"
+python3 -c "import transformers; print('✓ transformers')"
+python3 -c "import librosa; print('✓ librosa')"
+python3 -c "import anthropic; print('✓ anthropic')"
+python3 -c "import google.generativeai; print('✓ google-generativeai')"
+python3 -c "import requests; print('✓ requests')"
+
+echo -e "${GREEN}✓ All AI provider SDKs verified${NC}"
 echo ""
 
 # ==============================================================================
@@ -607,7 +611,7 @@ echo "  source setup_env.sh"
 echo "  source venv/bin/activate"
 echo "  ./scripts/process_single.sh audio.mp3 --transcribers whisperx --processors openai"
 echo ""
-echo "Available transcribers: whisperx, deepgram, assemblyai, sonix, speechmatics, novita"
+echo "Available transcribers: whisperx, kimi, deepgram, assemblyai, sonix, speechmatics, novita"
 echo "Available processors: anthropic, openai, gemini, deepseek, moonshot, ollama"
 echo ""
 echo "Batch Processing:"
