@@ -1,6 +1,6 @@
 # Audio Transcription Pipeline with Multi-Provider AI Processing
 
-Automated transcription with speaker identification using multiple transcription services (WhisperX local, Deepgram, AssemblyAI, OpenAI) and AI post-processing (Claude, GPT-4, Gemini, etc.) to correct technical terms and speaker names.
+Automated transcription with speaker identification using multiple transcription services (WhisperX local, Deepgram, AssemblyAI) and AI post-processing (Claude, GPT-4, Gemini, etc.) to correct technical terms and speaker names.
 
 ## Quick Start
 
@@ -29,8 +29,8 @@ process_single.sh (orchestration)
     ↓
 Phase 1: Transcription
     process_single_transcribe_and_diarize.py
-    - Runs all transcribers internally (whisperx, deepgram, assemblyai, openai)
-    - Outputs: intermediates/*_transcript_with_speakers.txt
+    - Runs all transcribers internally (whisperx, deepgram, assemblyai)
+    - Outputs: intermediates/*_raw.txt
     ↓
 Phase 2: Post-Processing  
     process_single_post_process.py
@@ -40,12 +40,13 @@ Phase 2: Post-Processing
 
 ## Transcription Services
 
-| Service | Type | Cost/hour | Speed | Diarization |
-|---------|------|-----------|-------|-------------|
-| **WhisperX** | Local GPU | FREE | 5-10 min | ✅ Yes |
-| **Deepgram** | Cloud API | $0.41 | 23 sec | ✅ Yes |
-| **AssemblyAI** | Cloud API | $1.44 | 3-4 min | ✅ Yes |
-| **OpenAI** | Cloud API | $5.75 | 4-5 min | ❌ No |
+All services include speaker diarization (identifying who said what).
+
+| Service | Type | Cost/hour | Speed |
+|---------|------|-----------|-------|
+| **WhisperX** | Local GPU | FREE | 5-10 min |
+| **Deepgram** | Cloud API | $0.41 | 23 sec |
+| **AssemblyAI** | Cloud API | $1.44 | 3-4 min |
 
 ## AI Post-Processors
 
@@ -164,7 +165,7 @@ outputs/
 
 Where:
 - `{basename}` = Original audio filename without extension
-- `{transcriber}` = whisperx, deepgram, assemblyai, or openai
+- `{transcriber}` = whisperx, deepgram, or assemblyai
 - `{processor}` = anthropic, openai, gemini, deepseek, moonshot, or ollama
 
 ## GPU Support

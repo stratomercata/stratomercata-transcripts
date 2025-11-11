@@ -34,7 +34,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --transcribers <list>    Comma-separated transcription services"
-            echo "                           (whisperx, deepgram, assemblyai, openai)"
+            echo "                           (whisperx, deepgram, assemblyai)"
             echo "                           Default: whisperx"
             echo ""
             echo "  --processors <list>      Comma-separated AI post-processors"
@@ -48,8 +48,8 @@ while [[ $# -gt 0 ]]; do
             echo "  # Deepgram + Claude"
             echo "  $0 --transcribers deepgram --processors anthropic"
             echo ""
-            echo "  # All combinations (4 transcribers × 6 processors = 24)"
-            echo "  $0 --transcribers whisperx,deepgram,assemblyai,openai \\"
+            echo "  # All combinations (3 transcribers × 6 processors = 18)"
+            echo "  $0 --transcribers whisperx,deepgram,assemblyai \\"
             echo "     --processors anthropic,openai,gemini,deepseek,moonshot,ollama"
             exit 1
             ;;
