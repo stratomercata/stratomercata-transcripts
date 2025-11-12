@@ -474,7 +474,11 @@ def process_with_gwen(transcript, context, ollama_process=None):
                 "model": model,
                 "prompt": prompt,
                 "stream": True,
-                "options": {"temperature": 0.3, "num_predict": 16000}
+                "options": {
+                    "temperature": 0.3,
+                    "num_predict": 32000,  # Increased from 16000 for longer transcripts
+                    "stop": []  # Override default stop sequences
+                }
             },
             timeout=1800,
             stream=True
@@ -495,10 +499,32 @@ def process_with_gwen(transcript, context, ollama_process=None):
                     break
         
         print(" ✓")
+        
+        # Validate output completeness
+        input_words = len(transcript.split())
+        output_words = len(result.split())
+        
+        # Check for severe truncation (output <40% of input = likely failure)
+        if output_words < input_words * 0.4:
+            print(f"\n      {failure('TRUNCATION DETECTED:')}")
+            print(f"         Input:  {input_words:,} words (~{estimated_tokens:,} tokens)")
+            print(f"         Output: {output_words:,} words (~{estimate_tokens(result):,} tokens)")
+            print(f"         Output is only {output_words/input_words*100:.1f}% of input length")
+            print(f"      → Qwen likely failed to complete the edit")
+            if started_ollama and ollama_process:
+                ollama_process.terminate()
+            raise Exception(f"Output truncation: {output_words} words vs {input_words} words expected")
+        
+        # Warn for moderate truncation (40-70% of input)
+        elif output_words < input_words * 0.7:
+            print(f"\n      ⚠️  WARNING: Output shorter than expected")
+            print(f"         Input:  {input_words:,} words")
+            print(f"         Output: {output_words:,} words ({output_words/input_words*100:.1f}% of input)")
+        
         return result, ollama_process if started_ollama else None
         
     except Exception as e:
-        print(f" ✗ Error: {e}")
+        print(f" {failure(f'Error: {e}')}")
         if started_ollama and ollama_process:
             ollama_process.terminate()
         return None, None
@@ -533,7 +559,7 @@ def process_single_combination(transcript_path, provider, api_keys, context, oll
             corrected, new_ollama_process = process_with_gwen(transcript, context, ollama_process)
     except Exception as e:
         elapsed = time.time() - start_time
-        print(f"      ✗ Processing failed ({elapsed:.1f}s): {e}")
+        print(f"      {failure(f'Processing failed ({elapsed:.1f}s): {e}')}")
         
         # Clean up any partial files that may have been created
         for partial_file in [output_txt, output_md]:
