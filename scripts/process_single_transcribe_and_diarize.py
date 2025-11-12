@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Unified transcription script with speaker diarization
-Supports multiple providers: WhisperX (local), Deepgram, AssemblyAI, Sonix, Speechmatics
+Supports multiple providers: WhisperX (local), Deepgram, AssemblyAI, Rev.ai, Sonix, Speechmatics
 All providers include speaker diarization support.
 """
 
@@ -151,7 +151,7 @@ def main():
     parser.add_argument(
         "--transcribers",
         required=True,
-        help="Comma-separated list of transcription services (whisperx,deepgram,assemblyai,sonix,speechmatics)"
+        help="Comma-separated list of transcription services (whisperx,deepgram,assemblyai,revai,sonix,speechmatics)"
     )
     parser.add_argument("--output-dir", default="intermediates", help="Output directory")
     parser.add_argument("--force-cpu", action="store_true", help="Force CPU for WhisperX")
@@ -166,7 +166,7 @@ def main():
     
     # Parse transcribers
     transcribers = [t.strip() for t in args.transcribers.split(',')]
-    valid_transcribers = {'whisperx', 'deepgram', 'assemblyai', 'sonix', 'speechmatics'}
+    valid_transcribers = {'whisperx', 'deepgram', 'assemblyai', 'revai', 'sonix', 'speechmatics'}
     
     for transcriber in transcribers:
         if transcriber not in valid_transcribers:
@@ -223,6 +223,8 @@ def main():
             _, skip_reason = validate_api_key('DEEPGRAM_API_KEY')
         elif transcriber == 'assemblyai':
             _, skip_reason = validate_api_key('ASSEMBLYAI_API_KEY')
+        elif transcriber == 'revai':
+            _, skip_reason = validate_api_key('REVAI_API_KEY')
         elif transcriber == 'sonix':
             _, skip_reason = validate_api_key('SONIX_API_KEY')
         elif transcriber == 'speechmatics':
@@ -248,6 +250,8 @@ def main():
                 output_path = transcribe_deepgram(str(audio_path), args.output_dir)
             elif transcriber == 'assemblyai':
                 output_path = transcribe_assemblyai(str(audio_path), args.output_dir)
+            elif transcriber == 'revai':
+                output_path = transcribe_revai(str(audio_path), args.output_dir)
             elif transcriber == 'sonix':
                 output_path = transcribe_sonix(str(audio_path), args.output_dir)
             elif transcriber == 'speechmatics':
@@ -564,6 +568,116 @@ def transcribe_assemblyai(audio_path, output_dir):
     # Save using utility function
     formatted_text = '\n'.join(formatted_lines)
     return save_raw_transcript_from_text(output_dir, audio_file_path.stem, "assemblyai", formatted_text)
+
+
+def transcribe_revai(audio_path, output_dir):
+    """Rev.ai v3 cloud transcription with speaker diarization"""
+    import time
+    import requests
+    import json
+    
+    api_key = os.environ.get('REVAI_API_KEY')
+    if not api_key:
+        raise ValueError("REVAI_API_KEY environment variable not set")
+    
+    audio_file_path = Path(audio_path)
+    
+    print(f"  Model: Rev.ai v3 Human")
+    print(f"  Uploading and transcribing...")
+    
+    # Submit job with speaker diarization
+    headers = {'Authorization': f'Bearer {api_key}'}
+    
+    with open(audio_file_path, 'rb') as f:
+        files = {'media': (audio_file_path.name, f, 'audio/mpeg')}
+        data = {
+            'options': json.dumps({
+                'language': 'en',
+                'speaker_channels_count': None,  # Auto-detect speakers
+                'remove_disfluencies': False,
+                'filter_profanity': False,
+                'custom_vocabularies': [
+                    {
+                        'phrases': [
+                            'Ethereum', 'blockchain', 'cryptocurrency', 'Bitcoin',
+                            'DeFi', 'NFT', 'smart contract', 'dApp', 'Web3',
+                            'Solidity', 'EVM', 'proof-of-stake', 'proof-of-work',
+                            'MetaMask', 'validator', 'gas', 'gwei', 'staking'
+                        ]
+                    }
+                ]
+            })
+        }
+        
+        response = requests.post(
+            'https://api.rev.ai/speechtotext/v1/jobs',
+            headers=headers,
+            files=files,
+            data=data
+        )
+        response.raise_for_status()
+        job_id = response.json()['id']
+    
+    print(f"  Transcribing (Job ID: {job_id})...")
+    
+    # Poll for completion
+    start_time = time.time()
+    while True:
+        response = requests.get(
+            f'https://api.rev.ai/speechtotext/v1/jobs/{job_id}',
+            headers=headers
+        )
+        response.raise_for_status()
+        job_data = response.json()
+        status = job_data['status']
+        
+        if status == 'transcribed':
+            break
+        elif status == 'failed':
+            raise RuntimeError(f"Rev.ai transcription failed: {job_data.get('failure', 'Unknown error')}")
+        
+        time.sleep(5)
+    
+    elapsed = time.time() - start_time
+    print(f"  Transcribed in {elapsed:.1f}s")
+    
+    # Get transcript in text format with timestamps and speaker labels
+    response = requests.get(
+        f'https://api.rev.ai/speechtotext/v1/jobs/{job_id}/transcript',
+        headers={**headers, 'Accept': 'application/vnd.rev.transcript.v1.0+json'}
+    )
+    response.raise_for_status()
+    transcript_data = response.json()
+    
+    # Format output
+    output_lines = []
+    current_speaker = None
+    
+    # Rev.ai returns monologues (continuous speech segments by one speaker)
+    for monologue in transcript_data.get('monologues', []):
+        speaker_num = monologue.get('speaker', 0)
+        speaker_label = f"SPEAKER_{speaker_num:02d}"
+        
+        if speaker_label != current_speaker:
+            if output_lines:
+                output_lines.append('')
+            output_lines.append(f'{speaker_label}:')
+            current_speaker = speaker_label
+        
+        # Process elements (words, punctuation) in the monologue
+        for element in monologue.get('elements', []):
+            if element.get('type') == 'text':
+                start = element.get('ts', 0)
+                value = element.get('value', '').strip()
+                if value:
+                    output_lines.append(f'[{start:.1f}s] {value}')
+    
+    # Count speakers
+    speakers = set(f"SPEAKER_{m.get('speaker', 0):02d}" for m in transcript_data.get('monologues', []))
+    print(f"  Detected {len(speakers)} speakers")
+    
+    formatted_text = '\n'.join(output_lines) + '\n'
+    return save_raw_transcript_from_text(output_dir, audio_file_path.stem, "revai", formatted_text)
 
 
 def transcribe_sonix(audio_path, output_dir):

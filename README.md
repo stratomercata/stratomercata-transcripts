@@ -47,6 +47,7 @@ All services include speaker diarization (identifying who said what).
 | **WhisperX** | large-v3 | Local GPU | FREE | 5-10 min |
 | **Deepgram** | nova-3-general | Cloud API | $0.41 | 23 sec |
 | **AssemblyAI** | Best | Cloud API | $1.44 | 3-4 min |
+| **Rev.ai** | v3 Human | Cloud API | $1.50 | ~3 min |
 | **Sonix** | Standard | Cloud API | $10.00 | ~2 min |
 | **Speechmatics** | Enhanced | Cloud API | $4.50 | ~1 min |
 
@@ -180,7 +181,7 @@ outputs/
 
 Where:
 - `{basename}` = Original audio filename without extension
-- `{transcriber}` = whisperx, deepgram, assemblyai, sonix, or speechmatics
+- `{transcriber}` = whisperx, deepgram, assemblyai, revai, sonix, or speechmatics
 - `{processor}` = anthropic, openai, gemini, deepseek, kimi, qwen3max, or qwen
 
 ## GPU Support
@@ -220,6 +221,7 @@ stratomercata-transcripts/
 ### Transcription Services
 - [AssemblyAI](https://www.assemblyai.com/docs) - Cloud transcription with speaker diarization
 - [Deepgram](https://developers.deepgram.com/) - Cloud speech-to-text API
+- [Rev.ai](https://www.rev.ai/speech-to-text-api) - Professional transcription with human-level accuracy
 - [Sonix](https://sonix.ai/) - Cloud transcription with speaker identification
 - [Speechmatics](https://www.speechmatics.com/) - Enhanced cloud transcription API
 - [WhisperX](https://github.com/m-bain/whisperX) - GPU-accelerated Whisper with diarization
