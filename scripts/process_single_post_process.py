@@ -389,7 +389,7 @@ def estimate_tokens(text):
     return int(len(text.split()) * 1.3)
 
 def process_with_qwen(transcript, context, ollama_process=None):
-    """Process transcript using Qwen 2.5 14B (via Ollama)."""
+    """Process transcript using Qwen 2.5 7B (via Ollama)."""
     import subprocess
     import time
     
@@ -399,8 +399,8 @@ def process_with_qwen(transcript, context, ollama_process=None):
     except ImportError:
         raise ImportError("requests package not installed")
     
-    # Use 14B model (optimized for 12GB GPUs like RTX 5070)
-    model = "qwen2.5:14b"
+    # Use 7B model (lighter, more stable for transcript processing)
+    model = "qwen2.5:7b"
     print(f"      Model: {model}")
     
     started_ollama = False
@@ -423,7 +423,10 @@ def process_with_qwen(transcript, context, ollama_process=None):
                 "prompt": prompt,
                 "stream": True,
                 "options": {
-                    "temperature": 0.3
+                    "temperature": 0.3,
+                    "num_ctx": 32768,      # Increase context window to 32K
+                    "num_predict": -1,     # No output limit (generate until done)
+                    "stop": []             # No early stopping tokens
                 }
             },
             timeout=1800,
