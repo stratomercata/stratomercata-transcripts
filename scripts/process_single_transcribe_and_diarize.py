@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 # Import shared utilities
-from common import (Colors, success, failure, skip, validate_api_key, 
+from common import (Colors, success, failure, skip, validate_api_key,
                     load_vocabulary, save_transcript_dual_format, cleanup_gpu_memory)
 
 
@@ -278,31 +278,30 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
     import torch
     from pyannote.audio import Pipeline
     import gc
-    
+
     # ========================================================================
     # GPU CLEANUP - Gentle cleanup (stops Ollama, clears PyTorch cache)
     # ========================================================================
-    print("  → Cleaning GPU memory...")
     cleanup_gpu_memory(force_cpu)
     if torch.cuda.is_available() and not force_cpu:
         print("  ✓ GPU memory cleared")
-    
+
     # Suppress pyannote warnings
     warnings.filterwarnings('ignore', category=UserWarning,
                           module='pyannote.audio.utils.reproducibility',
                           message='.*TensorFloat-32.*')
-    
-    # Configure TF32
+
+    # Configure TF32 optimizations for Ampere/RDN RTX GPUs
     torch.backends.cudnn.conv.fp32_precision = 'tf32'
     torch.backends.cuda.matmul.fp32_precision = 'tf32'
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
-    
+
     # Get HuggingFace token
     hf_token = os.environ.get('HF_TOKEN')
     if not hf_token:
         raise ValueError("HF_TOKEN environment variable not set")
-    
+
     # Setup device
     if force_cpu:
         device = "cpu"
@@ -322,10 +321,14 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
     
     # Step 1: Transcribe with OOM retry
     print("  → Transcribing...")
-    
+
     try:
+        print("  → Loading model...")
         model = whisperx.load_model(model_name, device, compute_type=compute_type, language="en")
+        print("  → Model loaded successfully")
+        print("  → Loading audio...")
         audio = whisperx.load_audio(audio_path)
+        print("  → Audio loaded successfully")
         result = model.transcribe(audio, batch_size=batch_size, language='en')
         
         # Align
@@ -334,8 +337,8 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
         
     except RuntimeError as e:
         if "out of memory" in str(e).lower() and device == "cuda":
-            print(f"  ⚠ OOM with batch_size={batch_size}, retrying with batch_size=8...")
-            
+            print(f"  ⚠ OOM with batch_size={batch_size}, retrying with batch_size=4...")
+
             # Clear memory and retry - now using gentle cleanup
             if 'model' in locals():
                 del model
@@ -343,15 +346,22 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
                 del model_a
             cleanup_gpu_memory(force_cpu)  # Gentle cleanup (stops Ollama gracefully)
             time.sleep(2)
-            
+
             # Retry with smaller batch size
-            model = whisperx.load_model(model_name, device, compute_type=compute_type, language="en")
-            audio = whisperx.load_audio(audio_path)
-            result = model.transcribe(audio, batch_size=8, language='en')
-            
-            # Align
-            model_a, metadata = whisperx.load_align_model(language_code="en", device=device)
-            result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
+            try:
+                model = whisperx.load_model(model_name, device, compute_type=compute_type, language="en")
+                audio = whisperx.load_audio(audio_path)
+                result = model.transcribe(audio, batch_size=4, language='en')
+
+                # Align
+                model_a, metadata = whisperx.load_align_model(language_code="en", device=device)
+                result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
+            except RuntimeError:
+                print(f"  ⚠ Still OOM with batch_size=4, retrying with batch_size=1...")
+                time.sleep(2)
+                result = model.transcribe(audio, batch_size=1, language='en')
+                # Align with smaller batch
+                result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
         else:
             raise
     
