@@ -321,6 +321,11 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
     
     # Step 1: Transcribe with OOM retry
     print("  → Transcribing...")
+    
+    model = None
+    model_a = None
+    audio = None
+    result = None
 
     try:
         print("  → Loading model...")
@@ -340,30 +345,54 @@ def transcribe_whisperx(audio_path, output_dir, force_cpu=False):
             print(f"  ⚠ OOM with batch_size={batch_size}, retrying with batch_size=4...")
 
             # Clear memory and retry - now using gentle cleanup
-            if 'model' in locals():
+            if model is not None:
                 del model
-            if 'model_a' in locals():
+                model = None
+            if model_a is not None:
                 del model_a
+                model_a = None
             cleanup_gpu_memory(force_cpu)  # Gentle cleanup (stops Ollama gracefully)
-            time.sleep(2)
+            time.sleep(3)
 
             # Retry with smaller batch size
             try:
+                print("  → Loading model (retry with batch_size=4)...")
                 model = whisperx.load_model(model_name, device, compute_type=compute_type, language="en")
-                audio = whisperx.load_audio(audio_path)
+                if audio is None:
+                    audio = whisperx.load_audio(audio_path)
                 result = model.transcribe(audio, batch_size=4, language='en')
 
                 # Align
                 model_a, metadata = whisperx.load_align_model(language_code="en", device=device)
                 result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
-            except RuntimeError:
+            except RuntimeError as e2:
                 print(f"  ⚠ Still OOM with batch_size=4, retrying with batch_size=1...")
-                time.sleep(2)
+                
+                # Clear memory again
+                if model is not None:
+                    del model
+                    model = None
+                if model_a is not None:
+                    del model_a
+                    model_a = None
+                cleanup_gpu_memory(force_cpu)
+                time.sleep(3)
+                
+                # Final retry with batch_size=1
+                print("  → Loading model (final retry with batch_size=1)...")
+                model = whisperx.load_model(model_name, device, compute_type=compute_type, language="en")
+                if audio is None:
+                    audio = whisperx.load_audio(audio_path)
                 result = model.transcribe(audio, batch_size=1, language='en')
                 # Align with smaller batch
+                model_a, metadata = whisperx.load_align_model(language_code="en", device=device)
                 result = whisperx.align(result["segments"], model_a, metadata, audio, device, return_char_alignments=False)
         else:
             raise
+    
+    # Verify we have a result before proceeding
+    if result is None:
+        raise RuntimeError("Transcription failed - no result obtained")
     
     # Step 2: Diarize
     print("  → Diarizing...")
