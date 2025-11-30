@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
             echo "                           Default: whisperx"
             echo ""
             echo "  --processors <list>      Comma-separated AI post-processors"
-            echo "                           (sonnet, opus, gemini, llama)"
+            echo "                           (sonnet, opus, gemini)"
             echo "                           Default: sonnet (Claude Sonnet 4.5)"
             echo ""
             echo "Examples:"

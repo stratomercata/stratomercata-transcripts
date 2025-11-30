@@ -2,7 +2,7 @@
 """
 AI transcript post-processor for Ethereum/blockchain content.
 Batch process transcripts with multiple AI providers.
-Supports: sonnet, opus, gemini, llama.
+Supports: sonnet, opus, gemini.
 """
 
 import os
@@ -354,44 +354,6 @@ def process_with_gemini(transcript, api_key, context):
     print(" ✓")
     return result
 
-def process_with_groq(transcript, api_key, context):
-    """Process transcript using Llama 3.3 70B (via Groq) with streaming."""
-    model = "llama-3.3-70b-versatile"
-    try:
-        import openai
-    except ImportError:
-        raise ImportError("openai package not installed")
-
-    client = openai.OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
-    prompt = build_prompt(context, transcript)
-
-    print(f"      Model: {model}")
-    print(f"      Processing: ", end='', flush=True)
-
-    result = ""
-    chunk_count = 0
-
-    stream = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=8000,
-        temperature=0.3,
-        stream=True
-    )
-
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            result += chunk.choices[0].delta.content
-            chunk_count += 1
-            if chunk_count % 100 == 0:
-                print(".", end='', flush=True)
-
-    print(" ✓")
-    return result
-
 def estimate_tokens(text):
     """Estimate tokens (words × 1.3)."""
     return int(len(text.split()) * 1.3)
@@ -460,8 +422,6 @@ def process_single_combination(transcript_path, provider, api_keys, context, oll
             corrected = process_with_opus(transcript, api_keys['opus'], context)
         elif provider == "gemini":
             corrected = process_with_gemini(transcript, api_keys['gemini'], context)
-        elif provider == "llama":
-            corrected = process_with_groq(transcript, api_keys['llama'], context)
     except Exception as e:
         elapsed = time.time() - start_time
         print(f"      {failure(f'Processing failed ({elapsed:.1f}s): {e}')}")
@@ -529,7 +489,7 @@ def main():
     
     parser.add_argument("transcripts", nargs='+', help="Transcript file path(s)")
     parser.add_argument("--processors", required=True,
-                       help="Comma-separated list of processors (sonnet,opus,gemini,llama)")
+                       help="Comma-separated list of processors (sonnet,opus,gemini)")
     
     args = parser.parse_args()
     
@@ -557,7 +517,7 @@ def main():
     
     # Parse processors
     processors = [p.strip() for p in args.processors.split(',')]
-    valid_processors = {'sonnet', 'opus', 'gemini', 'llama'}
+    valid_processors = {'sonnet', 'opus', 'gemini'}
     
     for proc in processors:
         if proc not in valid_processors:
@@ -573,8 +533,7 @@ def main():
     key_mapping = {
         'sonnet': 'ANTHROPIC_API_KEY',     # Claude Sonnet 4.5 via Anthropic
         'opus': 'ANTHROPIC_API_KEY',       # Claude Opus 4.5 via Anthropic
-        'gemini': 'GOOGLE_API_KEY',        # Gemini 3.0 Pro via Google
-        'llama': 'GROQ_API_KEY'            # Llama 3.3 70B via Groq
+        'gemini': 'GOOGLE_API_KEY'         # Gemini 3.0 Pro via Google
     }
     
     for proc in processors:
