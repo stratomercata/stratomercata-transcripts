@@ -424,10 +424,19 @@ def generate_report(all_results):
     report.append("\nRECOMMENDATIONS FOR YOUR TRANSCRIPTS:")
     report.append("="*70)
 
-    # Find best provider
+    # Find best provider (prefer higher quality models when context limits are equal)
+    # Model quality priority: opus > sonnet > gemini > deepseek
+    model_priority = {
+        'claude-opus-4-5': 100,       # Highest quality - premium reasoning
+        'claude-sonnet-4-5-20250929': 80,  # Great quality - balanced
+        'gemini-3.0-pro': 60,         # Good quality - technical
+        'deepseek-chat': 40           # Good quality - cost-effective
+    }
+    
     best_providers = [r for r in all_results if r['status'] == 'tested' and r['max_working'] >= 50000]
     if best_providers:
-        best = max(best_providers, key=lambda x: x['max_working'])
+        # Sort by: 1) max_working tokens, 2) model quality priority
+        best = max(best_providers, key=lambda x: (x['max_working'], model_priority.get(x['model'], 0)))
         report.append(f"\nBEST CHOICE: {best['provider']} ({best['model']})")
         report.append(f"  Context: {best['max_working']:,} tokens")
         report.append(f"  Perfect for your transcripts without chunking")
